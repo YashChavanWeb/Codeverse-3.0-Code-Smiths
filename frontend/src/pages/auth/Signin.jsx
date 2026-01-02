@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
+import { Card, CardHeader, CardContent, Button, Input, ErrorBanner } from '../../components/ui';
 
 function Signin() {
     const [formData, setFormData] = useState({ email: '', password: '' });
@@ -50,47 +51,48 @@ function Signin() {
     };
 
     return (
-        <div
-            className="min-h-screen flex items-center justify-center px-4"
-            style={{ backgroundColor: '#F2F2F2', fontFamily: 'Inter, sans-serif' }}
-        >
-            <div className="bg-white/30 backdrop-blur-xl p-10 rounded-2xl shadow-[0_10px_50px_rgba(0,0,0,0.25)] w-full max-w-md border border-white/40 transition-all">
-                <h1 className="text-4xl font-extrabold text-purple-800 mb-6 text-center">Welcome Back</h1>
-                <p className="text-purple-900 text-center mb-6 text-sm">Sign in to access your account</p>
-                {error && <p className="text-red-600 mb-4 text-center font-medium">{error}</p>}
-                <form onSubmit={handleSubmit} className="flex flex-col space-y-5">
-                    <input
-                        type="email"
-                        placeholder="Email address"
-                        id="email"
-                        onChange={handleChange}
-                        value={formData.email}
-                        className="p-3 bg-white/70 border border-white/40 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 placeholder-purple-500 text-purple-900"
-                    />
-                    <input
-                        type="password"
-                        placeholder="Password"
-                        id="password"
-                        onChange={handleChange}
-                        value={formData.password}
-                        className="p-3 bg-white/70 border border-white/40 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 placeholder-purple-500 text-purple-900"
-                    />
-                    <button
-                        type="submit"
-                        className="bg-gradient-to-trfrom-purple-600 to-purple-800 text-white py-3 rounded-xl shadow-xl hover:shadow-purple-800/40 transition duration-300 font-semibold tracking-wide"
-                    >
-                        Sign in
-                    </button>
-                </form>
-                <p className="mt-8 text-center text-purple-900 text-sm">
-                    Don't have an account?{' '}
-                    <Link to="/signup" className="text-purple-700 hover:underline font-semibold">
-                        Sign up
-                    </Link>
-                </p>
-            </div>
+        <div className="min-h-screen flex items-center justify-center px-4 bg-background-alt">
+            <Card className="w-full max-w-md">
+                <CardHeader className="text-center">
+                    <h1 className="text-3xl font-bold mb-2">Welcome Back</h1>
+                    <p className="text-foreground-muted text-sm">Sign in to access your account</p>
+                </CardHeader>
+                <CardContent>
+                    <ErrorBanner message={error} onClose={() => setError('')} />
+
+                    <form onSubmit={handleSubmit} className="flex flex-col">
+                        <Input
+                            label="Email Address"
+                            type="email"
+                            placeholder="name@company.com"
+                            id="email"
+                            onChange={handleChange}
+                            value={formData.email}
+                        />
+                        <Input
+                            label="Password"
+                            type="password"
+                            placeholder="••••••••"
+                            id="password"
+                            onChange={handleChange}
+                            value={formData.password}
+                        />
+                        <Button type="submit" size="lg" className="w-full mt-2">
+                            Sign in
+                        </Button>
+                    </form>
+                    <p className="mt-6 text-center text-foreground-muted text-sm border-t pt-6 border-border">
+                        Don't have an account?{' '}
+                        <Link to="/signup" className="text-primary hover:underline font-semibold">
+                            Sign up
+                        </Link>
+                    </p>
+                </CardContent>
+            </Card>
         </div>
     );
 }
 
 export default Signin;
+
+

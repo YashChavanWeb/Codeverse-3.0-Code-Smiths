@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-
+import { Card, CardContent, Button } from './ui';
 
 function Home() {
     const navigate = useNavigate();
@@ -13,27 +13,38 @@ function Home() {
     };
 
     return (
-        <div
-            className="flex min-h-screen bg-[#F2F2F2] font-[Inter,sans-serif] text-purple-900"
-            style={{ fontFamily: 'Inter, sans-serif' }}
-        >
+        <div className="min-h-screen flex items-center justify-center bg-background-alt p-6">
+            <Card className="w-full max-w-md text-center">
+                <CardContent className="py-12">
+                    <div className="w-20 h-20 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto mb-6">
+                        <span className="text-3xl font-bold">{username.charAt(0).toUpperCase()}</span>
+                    </div>
+                    <h1 className="text-3xl font-bold mb-2 text-foreground">Welcome Back</h1>
+                    <p className="text-foreground-muted mb-8 italic">
+                        Hello, <span className="font-semibold text-foreground">{username}</span> 👋
+                    </p>
 
-            {/* Main Content */}
-            <div className="flex-1 flex items-center justify-center p-6">
-                <div className="bg-white/30 backdrop-blur-xl border border-white/40 shadow-[0_10px_40px_rgba(0,0,0,0.25)] p-10 rounded-2xl w-full max-w-md text-center transition-all">
-                    <h1 className="text-4xl font-extrabold text-purple-800 mb-4">Welcome Back</h1>
-                    <p className="text-lg font-medium mb-6">Hello, <span className="font-semibold">{username}</span> 👋</p>
-                    
-                    <button
-                        onClick={handleLogout}
-                        className="bg-gradient-to-rfrom-purple-600 to-purple-800 text-white py-3 px-6 rounded-xl shadow-lg hover:shadow-purple-800/40 transition duration-300 font-semibold tracking-wide"
-                    >
-                        Logout
-                    </button>
-                </div>
-            </div>
+                    <div className="flex flex-col gap-3">
+                        <Button
+                            onClick={() => navigate('/profile')}
+                            variant="primary"
+                            className="w-full"
+                        >
+                            View Profile
+                        </Button>
+                        <Button
+                            onClick={handleLogout}
+                            variant="secondary"
+                            className="w-full"
+                        >
+                            Log out
+                        </Button>
+                    </div>
+                </CardContent>
+            </Card>
         </div>
     );
 }
 
 export default Home;
+
