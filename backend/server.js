@@ -1,0 +1,42 @@
+import express from "express";
+import dotenv from "dotenv";
+import connectDB from "./src/db/db.js";
+import authRoutes from "./src/auth/authRoutes.js";
+import cors from "cors";
+
+// Function to log messages
+const logRequest = (message) => {
+  console.log(`[LOG]: ${message}`);
+};
+
+dotenv.config();
+const app = express();
+const PORT = process.env.PORT || 3000;
+const corsOptions = {
+  origin: ["*"],
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true,
+};
+
+connectDB();
+
+// Middleware
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(cors(corsOptions));
+app.use((req, res, next) => {
+  logRequest(`Received request: ${req.method} ${req.originalUrl}`);
+  next();
+});
+
+// Routes
+app.use("/api/v1/auth", authRoutes);
+
+app.get("/", (req, res) => {
+  res.json({ message: `Server is running on port ${PORT}` });
+});
+
+app.listen(PORT, () => {
+  logRequest(`Server is running on port ${PORT}`);
+});

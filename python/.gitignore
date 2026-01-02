@@ -1,0 +1,42 @@
+# Ignore the virtual environment folder
+.venv/
+
+# Ignore Python cache files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Ignore environment configuration files
+.env
+.venv/
+*.env
+
+# Ignore IDE/editor configuration files (optional)
+.vscode/
+.idea/
+*.swp
+
+# Ignore Jupyter Notebook checkpoints (if applicable)
+.ipynb_checkpoints/
+
+# Ignore the local FastAPI development server log
+*.log
+
+# Ignore coverage reports
+.coverage
+.coverage.*
+nosetests.xml
+pytest.xml
+*.cover
+*.py,cover
+
+# Ignore macOS specific files
+.DS_Store
+
+# Ignore Windows specific files
+Thumbs.db
+
+# Ignore pipenv and poetry lock files (optional if you're using them)
+Pipfile.lock
+poetry.lock
