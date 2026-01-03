@@ -16,7 +16,7 @@ import RoleSelection from "./pages/auth/RoleSelection";
 // General Pages
 import Profile from "./components/Profile";
 
-//User Pages
+// User Pages
 import BasketEstimator from "./pages/BasketEstimator";
 
 // Vendor Pages
@@ -28,8 +28,6 @@ import VendorVoiceAdd from "./pages/vendor/VendorVoiceAdd";
 import VendorProducts from "./pages/vendor/VendorProducts";
 import LiveMap from "./components/LiveMap";
 import Dashboard from "./pages/user/DashboardPage";
-
-
 
 const AppContent = () => {
   const [drawerOpen, setDrawerOpen] = useState(true);
@@ -55,23 +53,34 @@ const AppContent = () => {
           <Route path="/signup" element={<Signup />} />
           <Route path="/signin" element={<Signin />} />
 
-          {/* User Protected Routes */}
+          {/* Root Route with Logic for Unauthenticated Users */}
           <Route
             path="/"
             element={
-              <ProtectedRoute roles={["user"]}>
-                <Dashboard />
-              </ProtectedRoute>
+              isAuthenticated ? (
+                <ProtectedRoute roles={["user"]}>
+                  <Dashboard />
+                </ProtectedRoute>
+              ) : (
+                <Navigate to="/select-role" replace />
+              )
             }
           />
 
-        
-
+          {/* User Protected Routes */}
           <Route
             path="/basket-estimator"
             element={
               <ProtectedRoute roles={["user"]}>
                 <BasketEstimator />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/location-vendors"
+            element={
+              <ProtectedRoute roles={["user"]}>
+                <LiveMap />
               </ProtectedRoute>
             }
           />
@@ -92,14 +101,6 @@ const AppContent = () => {
             element={
               <ProtectedRoute roles={["vendor"]}>
                 <VendorDashboard />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/location-vendors"
-            element={
-              <ProtectedRoute roles={["user"]}>
-                <LiveMap />
               </ProtectedRoute>
             }
           />
