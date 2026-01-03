@@ -10,9 +10,7 @@ function Signin() {
 
     useEffect(() => {
         const token = localStorage.getItem('token');
-        if (token) {
-            navigate('/');
-        }
+        if (token) navigate('/');
     }, [navigate]);
 
     const handleChange = (e) => {
@@ -30,23 +28,16 @@ function Signin() {
 
         try {
             const response = await axios.post('http://localhost:3000/api/v1/auth/signin', formData);
-
             if (response.status === 200) {
                 const { token, username } = response.data;
                 localStorage.setItem('token', token);
-                if (username) {
-                    localStorage.setItem('username', username);
-                }
+                if (username) localStorage.setItem('username', username);
                 navigate('/');
             }
-        } catch (error) {
-            if (error.response) {
-                setError(error.response.data.message || 'An error occurred. Please try again.');
-            } else if (error.request) {
-                setError('No response from the server. Please try again.');
-            } else {
-                setError('An error occurred. Please try again.');
-            }
+        } catch (err) {
+            if (err.response) setError(err.response.data.message || 'Something went wrong.');
+            else if (err.request) setError('No response from server.');
+            else setError('An error occurred. Please try again.');
         }
     };
 
@@ -59,8 +50,7 @@ function Signin() {
                 </CardHeader>
                 <CardContent>
                     <ErrorBanner message={error} onClose={() => setError('')} />
-
-                    <form onSubmit={handleSubmit} className="flex flex-col">
+                    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
                         <Input
                             label="Email Address"
                             type="email"
@@ -94,5 +84,3 @@ function Signin() {
 }
 
 export default Signin;
-
-

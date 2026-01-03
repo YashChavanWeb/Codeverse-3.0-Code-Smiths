@@ -6,6 +6,12 @@ import Signup from "./pages/auth/Signup";
 import Signin from "./pages/auth/Signin";
 import Profile from "./components/Profile";
 
+// Utility function for protected routes
+const ProtectedRoute = ({ children }) => {
+  const token = localStorage.getItem("token");
+  return token ? children : <Navigate to="/signin" replace />;
+};
+
 // Vendor pages
 import VendorAddOptions from "./pages/vendor/VendorAddOptions";
 import VendorManualAdd from "./pages/vendor/VendorManualAdd";
@@ -20,17 +26,28 @@ const App = () => {
     <BrowserRouter>
       <Routes>
         {/* Public Routes */}
-        <Route path="/" element={<Home />} />
+        {/* Public Routes */}
         <Route path="/signup" element={<Signup />} />
         <Route path="/signin" element={<Signin />} />
 
-        {/* Protected Profile */}
+        {/* Protected Profiles */}
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute>
+              <Home />
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="/profile"
           element={
-            isAuthenticated ? <Profile /> : <Navigate to="/signin" replace />
+            <ProtectedRoute>
+              <Profile />
+            </ProtectedRoute>
           }
         />
+
 
         {/* Vendor Routes */}
         <Route

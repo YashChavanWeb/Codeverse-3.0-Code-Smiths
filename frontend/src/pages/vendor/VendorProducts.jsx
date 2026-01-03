@@ -5,7 +5,7 @@ import { Card, CardHeader, CardContent, Table } from "../../components/ui";
 const VendorProducts = () => {
   const [products, setProducts] = useState([]);
   const [editingId, setEditingId] = useState(null);
-  const [editData, setEditData] = useState({ price: "", stock: "" });
+  const [editData, setEditData] = useState({ price: "", stock: "", quantity: "" });
 
   const priceInputRef = useRef(null);
 
@@ -26,6 +26,7 @@ const VendorProducts = () => {
         price: 30,
         unit: "kg",
         stock: 50,
+        quantity: 10,
         available: true,
       },
       {
@@ -34,6 +35,7 @@ const VendorProducts = () => {
         price: 120,
         unit: "kg",
         stock: 0,
+        quantity: 0,
         available: false,
       },
     ]);
@@ -44,12 +46,13 @@ const VendorProducts = () => {
     setEditData({
       price: product.price,
       stock: product.stock,
+      quantity: product.quantity,
     });
   };
 
   const cancelEdit = () => {
     setEditingId(null);
-    setEditData({ price: "", stock: "" });
+    setEditData({ price: "", stock: "", quantity: "" });
   };
 
   const saveEdit = (id) => {
@@ -57,11 +60,12 @@ const VendorProducts = () => {
       prev.map((p) =>
         p._id === id
           ? {
-              ...p,
-              price: Number(editData.price),
-              stock: Number(editData.stock),
-              available: Number(editData.stock) > 0,
-            }
+            ...p,
+            price: Number(editData.price),
+            stock: Number(editData.stock),
+            quantity: Number(editData.quantity),
+            available: Number(editData.stock) > 0,
+          }
           : p
       )
     );
@@ -113,6 +117,24 @@ const VendorProducts = () => {
     },
 
     {
+      header: "Quantity",
+      accessor: "quantity",
+      cell: (row) =>
+        editingId === row._id ? (
+          <input
+            type="number"
+            className="border px-2 py-1 rounded w-24"
+            value={editData.quantity}
+            onChange={(e) =>
+              setEditData({ ...editData, quantity: e.target.value })
+            }
+          />
+        ) : (
+          row.quantity
+        ),
+    },
+
+    {
       header: "Status",
       accessor: "available",
       cell: (row) =>
@@ -151,7 +173,7 @@ const VendorProducts = () => {
           <CardHeader>
             <h2 className="text-3xl font-semibold">Your Products</h2>
             <p className="text-sm text-foreground-muted">
-              Click the edit icon to update price and stock instantly
+              Click the edit icon to update price, stock, and quantity instantly
             </p>
           </CardHeader>
 
