@@ -11,7 +11,6 @@ import carrot from "../assets/Images/carrot.png";
 import orange from "../assets/Images/orange.png";
 import mango from "../assets/Images/mango.png";
 
-// Dummy Data
 const initialData = [
   { id: 1, name: "Tomato", image: tomato, price: 20, category: "Vegetable", stock: 120, unit: "kg" },
   { id: 2, name: "Potato", image: potato, price: 15, category: "Vegetable", stock: 80, unit: "kg" },
@@ -72,97 +71,129 @@ const LeaderBoard = () => {
   );
 
   return (
-    <div className="p-6 bg-gray-50 min-h-full">
-      <h2 className="text-2xl font-bold mb-6">Leaderboard</h2>
+    <div className="p-4 md:p-6 w-full">
+      <h2 className="text-xl md:text-2xl font-bold mb-4 md:mb-6">Leaderboard</h2>
 
       {/* Filters */}
-      <div className="flex gap-3 mb-6 flex-wrap">
+      <div className="flex flex-wrap gap-2 mb-4 md:mb-6">
         {["all", "increased", "reduced"].map(type => (
           <button
             key={type}
             onClick={() => setFilter(type)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition
+            className={`px-3 md:px-4 py-1 md:py-2 rounded-lg text-sm md:text-base font-medium transition
               ${filter === type ? "bg-green-600 text-white" : "bg-gray-200 text-gray-700 hover:bg-gray-300"}`}
           >
-            {type === "all" ? "All" : type === "increased" ? "Price Increased" : "Price Reduced"}
+            {type === "all" ? "All" : type === "increased" ? "Price ↑" : "Price ↓"}
           </button>
         ))}
       </div>
 
-      {/* Table */}
-      <div className="overflow-x-auto bg-white rounded-xl shadow-sm">
-        <table className="w-full">
-          <thead className="bg-gray-100">
-            <tr>
-              <th className="p-4 text-left">Product</th>
-              <th className="p-4 text-left">Category</th>
-              <th className="p-4 text-left">Stock</th>
-              <th className="p-4 text-left">Unit</th>
-              <th className="p-4 text-left">Price (₹)</th>
-            </tr>
-          </thead>
+      {/* Table / Cards */}
+      <div className="w-full">
+        {/* Desktop Table */}
+        <div className="hidden md:block overflow-x-auto bg-white rounded-xl shadow-sm">
+          <table className="w-full min-w-[600px]">
+            <thead className="bg-gray-100">
+              <tr>
+                <th className="p-4 text-left">Product</th>
+                <th className="p-4 text-left">Category</th>
+                <th className="p-4 text-left">Stock</th>
+                <th className="p-4 text-left">Unit</th>
+                <th className="p-4 text-left">Price (₹)</th>
+              </tr>
+            </thead>
 
-          <tbody>
-            <AnimatePresence>
-              {paginatedData.map(item => {
-                const priceUp = prevPrices[item.id] < item.price;
-                const priceDown = prevPrices[item.id] > item.price;
-                const lowStock = item.stock < 40;
+            <tbody>
+              <AnimatePresence>
+                {paginatedData.map(item => {
+                  const priceUp = prevPrices[item.id] < item.price;
+                  const priceDown = prevPrices[item.id] > item.price;
+                  const lowStock = item.stock < 40;
 
-                return (
-                  <motion.tr
-                    key={item.id}
-                    layout
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    transition={{ duration: 0.35 }}
-                    className="border-b hover:bg-gray-50"
-                  >
-                    {/* Product */}
-                    <td className="p-4">
-                      <div className="flex items-center gap-4 bg-white rounded-xl p-3 shadow-sm hover:shadow-md transition">
-                        <img src={item.image} alt={item.name} className="w-12 h-12 rounded-lg" />
-                        <div>
-                          <p className="font-semibold text-gray-800">{item.name}</p>
-                          <p className="text-xs text-gray-500">Fresh Market Produce</p>
+                  return (
+                    <motion.tr
+                      key={item.id}
+                      layout
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -20 }}
+                      transition={{ duration: 0.35 }}
+                      className="border-b hover:bg-gray-50"
+                    >
+                      <td className="p-4">
+                        <div className="flex items-center gap-4">
+                          <img src={item.image} alt={item.name} className="w-12 h-12 rounded-lg" />
+                          <div>
+                            <p className="font-semibold text-gray-800">{item.name}</p>
+                            <p className="text-xs text-gray-500">Fresh Market Produce</p>
+                          </div>
                         </div>
-                      </div>
-                    </td>
-
-                    {/* Category */}
-                    <td className="p-4 font-medium text-gray-700">
-                      {item.category}
-                    </td>
-
-                    {/* Stock */}
-                    <td className={`p-4 font-semibold ${lowStock ? "text-red-600" : "text-green-600"}`}>
-                      {item.stock}
-                    </td>
-
-                    {/* Unit */}
-                    <td className="p-4 text-gray-600">
-                      {item.unit}
-                    </td>
-
-                    {/* Price */}
-                    <td className="p-4">
-                      <div className="flex items-center gap-2 font-semibold">
+                      </td>
+                      <td className="p-4 font-medium text-gray-700">{item.category}</td>
+                      <td className={`p-4 font-semibold ${lowStock ? "text-red-600" : "text-green-600"}`}>{item.stock}</td>
+                      <td className="p-4 text-gray-600">{item.unit}</td>
+                      <td className="p-4 flex items-center gap-2 font-semibold">
                         ₹{item.price}
                         {priceUp && <ArrowUp className="w-4 h-4 text-red-600" />}
                         {priceDown && <ArrowDown className="w-4 h-4 text-green-600" />}
-                      </div>
-                    </td>
-                  </motion.tr>
-                );
-              })}
-            </AnimatePresence>
-          </tbody>
-        </table>
+                      </td>
+                    </motion.tr>
+                  );
+                })}
+              </AnimatePresence>
+            </tbody>
+          </table>
+        </div>
+
+        {/* Mobile Cards */}
+        <div className="md:hidden flex flex-col gap-4">
+          <AnimatePresence>
+            {paginatedData.map(item => {
+              const priceUp = prevPrices[item.id] < item.price;
+              const priceDown = prevPrices[item.id] > item.price;
+              const lowStock = item.stock < 40;
+
+              return (
+                <motion.div
+                  key={item.id}
+                  layout
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.35 }}
+                  className="bg-white rounded-xl p-4 shadow-sm hover:shadow-md flex flex-col gap-2"
+                >
+                  <div className="flex items-center gap-3">
+                    <img src={item.image} alt={item.name} className="w-16 h-16 rounded-lg" />
+                    <div>
+                      <p className="font-semibold text-gray-800">{item.name}</p>
+                      <p className="text-xs text-gray-500">{item.category}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between text-sm md:text-base font-medium">
+                    <span className={lowStock ? "text-red-600" : "text-green-600"}>Stock: {item.stock}</span>
+                    <span>Unit: {item.unit}</span>
+<span
+  className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-semibold
+    ${lowStock ? "bg-red-50 text-red-600" : "bg-green-50 text-green-600"}
+  `}
+>
+  ₹{item.price}
+  {priceUp && <ArrowUp className="w-4 h-4 text-red-600" />}
+  {priceDown && <ArrowDown className="w-4 h-4 text-green-600" />}
+</span>
+
+                  </div>
+                </motion.div>
+              );
+            })}
+          </AnimatePresence>
+        </div>
       </div>
 
       {/* Pagination */}
-      <div className="flex justify-center items-center gap-4 mt-6">
+      <div className="flex justify-center items-center gap-4 mt-4 md:mt-6">
         <button
           disabled={page === 1}
           onClick={() => setPage(p => Math.max(p - 1, 1))}

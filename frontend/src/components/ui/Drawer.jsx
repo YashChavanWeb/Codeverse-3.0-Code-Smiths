@@ -23,7 +23,7 @@ const Drawer = ({ open, onToggle, role: propRole }) => {
   const { logout, role: authRole, isAuthenticated } = useAuth();
   const [isMobile, setIsMobile] = useState(false);
 
-  // 1. Handle Screen Resize
+  // Handle screen resize
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
     handleResize();
@@ -31,19 +31,18 @@ const Drawer = ({ open, onToggle, role: propRole }) => {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // 2. Hide Drawer logic
+  // Hide Drawer on public routes
   const publicRoutes = ["/signin", "/signup", "/select-role"];
   const isPublicRoute = publicRoutes.includes(location.pathname);
 
-  // Prevent scroll when mobile drawer is open
+  // Prevent scroll when drawer open (desktop only)
   useEffect(() => {
-    document.body.style.overflow = isMobile && open && !isPublicRoute ? "hidden" : "unset";
+    document.body.style.overflow = !isMobile && open && !isPublicRoute ? "hidden" : "unset";
     return () => (document.body.style.overflow = "unset");
   }, [open, isMobile, isPublicRoute]);
 
   if (isPublicRoute || !isAuthenticated) return null;
 
-  // Determine role: prop > auth > default user
   const role = propRole || authRole || "user";
 
   const handleLogout = () => {
@@ -51,13 +50,10 @@ const Drawer = ({ open, onToggle, role: propRole }) => {
     navigate("/signin");
   };
 
-  // 3. Navigation Configuration
   const menuConfig = {
     user: [
       { label: "Dashboard", icon: <HomeIcon size={20} />, path: "/" },
-      { label: "Leaderboard", icon: <Trophy size={20} />, path: "/leaderboard" },
       { label: "Location Vendors", icon: <MapPin size={20} />, path: "/location-vendors" },
-      { label: "Product Comparison", icon: <ShoppingCart size={20} />, path: "/product-comparison" },
       { label: "Basket Estimator", icon: <DollarSign size={20} />, path: "/basket-estimator" },
     ],
     vendor: [
@@ -73,50 +69,34 @@ const Drawer = ({ open, onToggle, role: propRole }) => {
 
   return (
     <>
-      {/* Mobile Backdrop */}
-      {isMobile && open && (
-        <div
-          className="fixed inset-0 bg-black/50 z-40 transition-opacity"
-          onClick={() => onToggle(false)}
-        />
-      )}
-
-      {/* Main Sidebar/Drawer */}
+      {/* Desktop Sidebar */}
       <aside
-        className={`fixed top-0 left-0 h-full bg-white border-r shadow-xl flex flex-col transition-all duration-300 z-50
-          ${isMobile
-            ? `w-64 transform ${open ? "translate-x-0" : "-translate-x-full"}`
-            : `${open ? "w-64" : "w-20"}`
-          }
+        className={`hidden md:flex fixed top-0 left-0 h-full bg-white border-r shadow-xl flex-col transition-all duration-300 z-50
+          ${open ? "w-64" : "w-20"}
         `}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b min-h-[65px]">
-          {(open || isMobile) && (
-            <h1 className="font-bold text-lg text-green-600 truncate">SmartVegis</h1>
-          )}
+        <div className="flex items-center justify-between p-5 border-b">
+          {open && <h1 className="font-bold text-lg text-green-600 truncate">SmartVegis</h1>}
           <button
             onClick={() => onToggle(!open)}
             className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
           >
-            {isMobile && open ? <X size={20} /> : <Menu size={20} />}
+            {open ? <X size={20} /> : <Menu size={20} />}
           </button>
         </div>
 
-        {/* Navigation Body */}
-        <nav className="flex-1 p-3 space-y-1 overflow-y-auto overflow-x-hidden">
+        {/* Navigation */}
+        <nav className="flex-1 p-4 space-y-1 overflow-y-auto overflow-x-hidden">
           {navItems.map((item) => {
             const isActive = location.pathname === item.path;
             return (
               <button
                 key={item.label}
-                onClick={() => {
-                  navigate(item.path);
-                  if (isMobile) onToggle(false);
-                }}
+                onClick={() => navigate(item.path)}
                 className={`flex items-center gap-3 w-full p-3 rounded-xl transition-all group
                   ${isActive
-                    ? "bg-green-50 text-green-700"
+                    ? "bg-green-100 text-green-700 px-3"
                     : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                   }
                 `}
@@ -124,38 +104,50 @@ const Drawer = ({ open, onToggle, role: propRole }) => {
                 <span className={`${isActive ? "text-green-600" : "text-gray-400 group-hover:text-gray-600"}`}>
                   {item.icon}
                 </span>
-                {(open || isMobile) && (
-                  <span className="font-medium whitespace-nowrap text-sm">{item.label}</span>
-                )}
+                {open && <span className="font-medium whitespace-nowrap text-sm">{item.label}</span>}
               </button>
             );
           })}
         </nav>
 
-        {/* Footer / Profile & Logout */}
+        {/* Footer */}
         <div className="p-3 border-t space-y-1">
           <button
-            onClick={() => {
-              navigate("/profile");
-              if (isMobile) onToggle(false);
-            }}
-            className={`flex items-center gap-3 w-full p-3 rounded-xl text-gray-600 hover:bg-gray-50
+            onClick={() => navigate("/profile")}
+            className={`flex items-center gap-3 w-full p-4 rounded-xl text-gray-600 hover:bg-gray-50
               ${location.pathname === "/profile" ? "bg-gray-100 text-gray-900" : ""}
             `}
           >
             <User size={20} />
-            {(open || isMobile) && <span className="font-medium text-sm">Profile</span>}
+            {open && <span className="font-medium text-sm">Profile</span>}
           </button>
 
           <button
             onClick={handleLogout}
-            className="flex items-center gap-3 w-full p-3 rounded-xl text-red-600 hover:bg-red-50 transition-colors"
+            className="flex items-center gap-3 w-full p-4 rounded-xl text-red-600 hover:bg-red-50 transition-colors"
           >
             <LogOut size={20} />
-            {(open || isMobile) && <span className="font-medium text-sm">Logout</span>}
+            {open && <span className="font-medium text-sm">Logout</span>}
           </button>
         </div>
       </aside>
+
+{/* Mobile Bottom Navigation */}
+<div className="md:hidden fixed bottom-0 left-0 w-full bg-white shadow-t border-t z-50 flex">
+  {navItems.map((item) => (
+    <button
+      key={item.label}
+      onClick={() => navigate(item.path)}
+      className={`flex-1 py-5 flex flex-col items-center justify-center text-gray-600 hover:text-green-600 transition-colors
+        ${location.pathname === item.path ? "text-green-600" : ""}
+      `}
+    >
+      {item.icon}
+      {/* <span className="text- mt-1 text-center whitespace-normal break-words">{item.label}</span> */}
+    </button>
+  ))}
+</div>
+
     </>
   );
 };
