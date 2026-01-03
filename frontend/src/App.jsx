@@ -6,25 +6,39 @@ import Signup from "./pages/auth/Signup";
 import Signin from "./pages/auth/Signin";
 import Profile from "./components/Profile";
 
+// Utility function for protected routes
+const ProtectedRoute = ({ children }) => {
+  const token = localStorage.getItem("token");
+  return token ? children : <Navigate to="/signin" replace />;
+};
+
 const App = () => {
   return (
     <BrowserRouter>
       <Routes>
+        {/* Public Routes */}
         <Route path="/signup" element={<Signup />} />
         <Route path="/signin" element={<Signin />} />
 
-        {/* Protected Route */}
+        {/* Protected Routes */}
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute>
+              <Home />
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="/profile"
           element={
-            localStorage.getItem("token") ? (
+            <ProtectedRoute>
               <Profile />
-            ) : (
-              <Navigate to="/signin" replace />
-            )
+            </ProtectedRoute>
           }
         />
 
+        {/* Fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
