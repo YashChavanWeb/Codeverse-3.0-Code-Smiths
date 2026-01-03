@@ -238,6 +238,78 @@ const deleteProduct = async (req, res) => {
   }
 };
 
+const getVendorsWithProducts = async (req, res) => {
+  const { search } = req.query;
+
+  try {
+    let productMatch = {};
+    if (search) {
+      productMatch.name = new RegExp(search, "i");
+    }
+
+    // Use aggregation to group products by vendor
+    const vendorsWithProducts = await Product.aggregate([
+      { $match: productMatch },
+      {
+        $lookup: {
+          from: "users",
+          localField: "vendor",
+          foreignField: "_id",
+          as: "vendorDetails",
+        },
+      },
+      { $unwind: "$vendorDetails" },
+      {
+        $group: {
+          _id: "$vendorDetails._id",
+          name: { $first: "$vendorDetails.storeName" },
+          address: { $first: "$vendorDetails.location.address" },
+          coordinates: { $first: "$vendorDetails.location.coordinates" },
+          items: {
+            $push: {
+              _id: "$_id",
+              name: "$name",
+              category: "$category",
+              price: "$price",
+              unit: "$unit",
+              imageUrl: "$imageUrl",
+              stock: "$stock",
+              available: "$available",
+            },
+          },
+        },
+      },
+    ]);
+
+    // Format coordinates for frontend (split string into [lat, lng])
+    const formattedData = vendorsWithProducts.map((v) => {
+      let lat = 0,
+        lng = 0;
+      if (v.coordinates && v.coordinates !== "manual_entry") {
+        const parts = v.coordinates.split(",");
+        lat = parseFloat(parts[0]?.trim());
+        lng = parseFloat(parts[1]?.trim());
+      }
+      return {
+        ...v,
+        lat,
+        lng,
+      };
+    });
+
+    res.status(200).json({
+      success: true,
+      data: formattedData,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Error fetching vendors with products",
+      error: error.message,
+    });
+  }
+};
+
 const getProductImageByName = async (req, res) => {
   const { name } = req.query;
 
@@ -274,5 +346,6 @@ export {
   updateProductStock,
   updateProductAvailable,
   deleteProduct,
+  getVendorsWithProducts,
   getProductImageByName,
 };

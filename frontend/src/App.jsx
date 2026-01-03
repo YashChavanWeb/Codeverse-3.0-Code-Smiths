@@ -185,12 +185,16 @@ const AppContent = () => {
   );
 };
 
+import { BasketProvider } from "./context/BasketContext";
+
 const App = () => {
   return (
     <AuthProvider>
-      <BrowserRouter>
-        <AppContent />
-      </BrowserRouter>
+      <BasketProvider>
+        <BrowserRouter>
+          <AppContent />
+        </BrowserRouter>
+      </BasketProvider>
     </AuthProvider>
   );
 };

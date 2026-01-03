@@ -1,13 +1,10 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const genAI = new GoogleGenerativeAI("AIzaSyAXnuY1pFdhIrBJzZoCaraC1zcSxC4ioFQ");
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 export const parseVoiceInput = async (req, res) => {
   try {
     console.log("VOICE PARSE HIT");
-    console.log("BODY:", req.body);
-    console.log("USER:", req.user?._id);
-
     const { transcript, language } = req.body;
 
     if (!transcript) {
@@ -16,7 +13,6 @@ export const parseVoiceInput = async (req, res) => {
         message: "Transcript is required",
       });
     }
-
 
     /* ==============================
        🧠 INTENT-AWARE GEMINI PROMPT
@@ -56,13 +52,12 @@ User speech: "${transcript}"
 `;
 
     const model = genAI.getGenerativeModel({
-      model: "gemini-2.5-flash",
+      model: "gemini-1.5-flash",
     });
 
     const result = await model.generateContent(prompt);
     const rawText = result.response.text();
-    console.log("Gemini Key Loaded:", !!process.env.GEMINI_API_KEY);
-
+    console.log("Gemini processed transcript");
 
     let parsed;
     try {
