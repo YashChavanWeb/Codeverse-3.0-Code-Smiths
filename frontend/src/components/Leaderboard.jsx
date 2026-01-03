@@ -3,27 +3,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ArrowUp, ArrowDown } from "lucide-react";
 import axios from "axios";
 
-/* Images */
-import apple from "../assets/Images/apple.png";
-import tomato from "../assets/Images/tomato.png";
-import cabbage from "../assets/Images/cabbage.png";
-import banana from "../assets/Images/banana.png";
-import potato from "../assets/Images/potato.png";
-import carrot from "../assets/Images/carrot.png";
-import orange from "../assets/Images/orange.png";
-import mango from "../assets/Images/mango.png";
-
-const imageMap = {
-  Tomato: tomato,
-  Potato: potato,
-  Apple: apple,
-  Carrot: carrot,
-  Banana: banana,
-  Cabbage: cabbage,
-  Orange: orange,
-  Mango: mango,
-};
-
 const LeaderBoard = ({ fetchUrl, streamUrl, title = "Leaderboard", pageSize = 5 }) => {
   const [products, setProducts] = useState([]);
   const [prevPrices, setPrevPrices] = useState({});
@@ -213,9 +192,14 @@ const LeaderBoard = ({ fetchUrl, streamUrl, title = "Leaderboard", pageSize = 5 
                     >
                       <td className="p-4 flex items-center gap-3">
                         <motion.img
-                          animate={{ scale: isHighlighted ? 1.2 : 1 }}
-                          src={imageMap[p.name] || apple}
-                          className="w-12 h-12 object-contain"
+                          animate={{ scale: isHighlighted ? [1, 1.25, 1] : 1 }}
+                          transition={{ duration: 0.4 }}
+                          /* 🔹 Uses image string from DB instead of static map */
+                          src={p.imageUrl}
+                          alt={p.name}
+                          className="w-12 h-12 object-contain rounded-md"
+                          /* Fallback in case DB image fails to load */
+                          onError={(e) => { e.target.src = "https://via.placeholder.com/150?text=Product"; }}
                         />
                         <span className="font-semibold text-gray-800">{p.name}</span>
                       </td>
