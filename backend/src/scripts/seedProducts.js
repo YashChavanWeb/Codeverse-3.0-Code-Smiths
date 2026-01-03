@@ -10,6 +10,14 @@ dotenv.config();
 
 const TEMP_DIR = path.join(process.cwd(), "temp/images");
 
+/* -------------------- VENDOR IDS -------------------- */
+
+const VENDOR_IDS = [
+  "6959720368cd3e0761f3a5f9",
+  "695972f96336b77abc90b178",
+  "695973196336b77abc90b17b",
+];
+
 /* -------------------- PRODUCT DATA -------------------- */
 
 const vegetables = [
@@ -47,7 +55,6 @@ const getUnsplashImage = async (query) => {
       Authorization: `Client-ID ${process.env.UNSPLASH_ACCESS_KEY}`,
     },
   });
-
   return res.data.results[0].urls.regular;
 };
 
@@ -56,23 +63,24 @@ const downloadImage = async (url, filePath) => {
   await fs.outputFile(filePath, res.data);
 };
 
-// random price between min & max
 const randomPrice = (min, max) =>
   Math.floor(Math.random() * (max - min + 1)) + min;
-
-// random stock
 const randomStock = (min, max) =>
   Math.floor(Math.random() * (max - min + 1)) + min;
 
 /* -------------------- SEED FUNCTION -------------------- */
 
 const uploadProducts = async (items, category) => {
-  for (const item of items) {
+  // Use index to rotate through the 3 vendors equally
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i];
+    const vendorId = VENDOR_IDS[i % VENDOR_IDS.length]; // Rotates 0, 1, 2, 0, 1, 2...
+
     try {
       const filename = `${item.name.toLowerCase().replace(/ /g, "_")}.jpg`;
       const localPath = path.join(TEMP_DIR, filename);
 
-      console.log(`Fetching image for ${item.name}`);
+      console.log(`Fetching image for ${item.name} (Vendor: ${vendorId})`);
       const imageUrl = await getUnsplashImage(item.search);
 
       await downloadImage(imageUrl, localPath);
@@ -85,20 +93,17 @@ const uploadProducts = async (items, category) => {
         name: item.name,
         category,
         imageUrl: upload.secure_url,
-
-        price: randomPrice(20, 200), // ✅ random price
+        price: randomPrice(20, 200),
         unit: item.unit,
-
         stock: {
-          current: randomStock(10, 100), // ✅ random stock
-          before: 0, // ✅ always 0
+          current: randomStock(10, 100),
+          before: 0,
         },
-
         available: true,
-        vendor: process.env.DEFAULT_VENDOR_ID,
+        vendor: vendorId, // Assigned sequentially
       });
 
-      console.log(`✅ ${item.name} added`);
+      console.log(`✅ ${item.name} added to vendor ${vendorId}`);
     } catch (err) {
       console.error(`❌ ${item.name} failed`, err.message);
     }
@@ -108,14 +113,24 @@ const uploadProducts = async (items, category) => {
 /* -------------------- RUN -------------------- */
 
 const run = async () => {
-  await mongoose.connect(process.env.MONGO_URI);
-  await fs.ensureDir(TEMP_DIR);
+  try {
+    await mongoose.connect(process.env.MONGO_URI);
+    console.log("Connected to MongoDB...");
 
-  await uploadProducts(vegetables, "Vegetable");
-  await uploadProducts(fruits, "Fruit");
+    await fs.ensureDir(TEMP_DIR);
 
-  console.log("🎉 All products seeded successfully");
-  process.exit(0);
+    console.log("Seeding Vegetables...");
+    await uploadProducts(vegetables, "Vegetable");
+
+    console.log("Seeding Fruits...");
+    await uploadProducts(fruits, "Fruit");
+
+    console.log("🎉 All products seeded successfully across 3 vendors");
+    process.exit(0);
+  } catch (error) {
+    console.error("Fatal Error:", error.message);
+    process.exit(1);
+  }
 };
 
 run();

@@ -47,8 +47,8 @@ const Profile = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background-alt p-4">
-        <Card className="w-full max-w-md text-center p-6">
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <Card variant='glass' className="w-full max-w-md text-center p-6">
           <p className="text-error mb-4">{error}</p>
           <Button onClick={() => window.location.reload()}>Retry</Button>
         </Card>
@@ -69,8 +69,8 @@ const Profile = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background-alt p-4">
-      <Card className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center p-4">
+      <Card variant='glass' className="w-full max-w-md">
         <CardContent className="pt-8 text-center">
           <img
             src={displayUser.picture}
@@ -126,8 +126,8 @@ const Profile = () => {
           <div className="border-t border-border pt-6 mt-2">
             <Button
               onClick={logout}
-              variant="outline"
-              className="w-full border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 transition-colors"
+              variant="primary"
+              className="w-full border-red-200 bg-red-500/30 text-red-600 hover:bg-red-50 hover:border-red-300 transition-colors"
             >
               Log out
             </Button>

@@ -53,6 +53,9 @@ const Drawer = ({ open, onToggle, role: propRole }) => {
   /* ---------------- Menu Config ---------------- */
   const menuConfig = {
     user: [
+      { label: "Dashboard", icon: <HomeIcon size={20} />, path: "/" },
+      { label: "Location Vendors", icon: <MapPin size={20} />, path: "/location-vendors" },
+      { label: "Basket Estimator", icon: <DollarSign size={20} />, path: "/basket-estimator" },
       { label: "Dashboard", icon: Home, path: "/" },
       { label: "Location Vendors", icon: MapPin, path: "/location-vendors" },
       { label: "Basket Estimator", icon: DollarSign, path: "/basket-estimator" },
@@ -64,17 +67,11 @@ const Drawer = ({ open, onToggle, role: propRole }) => {
       },
     ],
     vendor: [
-      { label: "Dashboard", icon: Home, path: "/vendor" },
-      { label: "Add Products", icon: PlusSquare, path: "/vendor/add" },
-      { label: "Manage Products", icon: Tag, path: "/vendor/products" },
-      { label: "Market Insights", icon: BarChart2, path: "/vendor/compare" },
-      { label: "Voice Updates", icon: Mic, path: "/vendor/add/voice" },
-      {
-        label: "Notifications",
-        icon: Bell,
-        path: "/notifications",
-        showBadge: true,
-      },
+      { label: "Dashboard", icon: <HomeIcon size={20} />, path: "/vendor" },
+      { label: "Add Products", icon: <PlusSquare size={20} />, path: "/vendor/add" },
+      { label: "Manage Products", icon: <Tag size={20} />, path: "/vendor/products" },
+      { label: "Market Insights", icon: <BarChart2 size={20} />, path: "/vendor/compare" },
+      { label: "Voice Updates", icon: <Mic size={20} />, path: "/vendor/add/voice" },
     ],
   };
 
@@ -84,21 +81,18 @@ const Drawer = ({ open, onToggle, role: propRole }) => {
     <>
       {/* ================= Desktop Sidebar ================= */}
       <aside
-        className={`hidden md:flex fixed top-0 left-0 h-full bg-white border-r shadow-xl flex-col z-50
-        transition-all duration-300 ${open ? "w-64" : "w-20"}`}
+        className={`hidden md:flex fixed top-0 left-0 h-full bg-green-500/20 border-r shadow-xl flex-col transition-all duration-300 z-50
+          ${open ? "w-64" : "w-20"}
+        `}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-5 border-b">
-          {open && (
-            <h1 className="font-bold text-lg text-green-600 truncate">
-              SmartVegis
-            </h1>
-          )}
+        <div className="flex items-center justify-between p-5">
+          {open && <h1 className="font-bold text-lg text-green-600 truncate">SmartVegis</h1>}
           <button
             onClick={() => onToggle(!open)}
             className="p-2 rounded-lg hover:bg-gray-100"
           >
-            {open ? <X size={22} /> : <Menu size={22} />}
+            {open ? <X size={20} /> : <Menu size={20} />}
           </button>
         </div>
 
@@ -112,28 +106,17 @@ const Drawer = ({ open, onToggle, role: propRole }) => {
               <button
                 key={item.label}
                 onClick={() => navigate(item.path)}
-                className={`flex items-center gap-3 w-full p-3 rounded-xl transition
-                  ${
-                    active
-                      ? "bg-green-100 text-green-700"
-                      : "text-gray-600 hover:bg-gray-50"
-                  }`}
+                className={`flex items-center gap-3 w-full p-3 rounded-xl transition-all ease-in-out group
+                  ${isActive
+                    ? "bg-green-500/30 text-green-800 px-3"
+                    : "text-gray-500 hover:bg-green-50 hover:text-gray-900"
+                  }
+                `}
               >
-                <div className="relative">
-                  <Icon size={22} />
-
-                  {item.showBadge && unreadCount > 0 && (
-                    <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs rounded-full min-w-[18px] px-1.5 text-center">
-                      {unreadCount}
-                    </span>
-                  )}
-                </div>
-
-                {open && (
-                  <span className="text-sm font-medium whitespace-nowrap">
-                    {item.label}
-                  </span>
-                )}
+                <span className={`${isActive ? "text-green-800" : "text-gray-500 group-hover:text-gray-600"}`}>
+                  {item.icon}
+                </span>
+                {open && <span className="font-medium whitespace-nowrap text-sm">{item.label}</span>}
               </button>
             );
           })}
@@ -145,8 +128,8 @@ const Drawer = ({ open, onToggle, role: propRole }) => {
             onClick={() => navigate("/profile")}
             className="flex items-center gap-3 w-full p-3 rounded-xl text-gray-600 hover:bg-gray-50"
           >
-            <User size={22} />
-            {open && <span className="text-sm font-medium">Profile</span>}
+            <User size={20} />
+            {open && <span className="font-medium text-sm">Profile</span>}
           </button>
 
           <button
@@ -159,30 +142,22 @@ const Drawer = ({ open, onToggle, role: propRole }) => {
         </div>
       </aside>
 
-      {/* ================= Mobile Bottom Navigation ================= */}
-      <div className="md:hidden fixed bottom-0 left-0 w-full bg-white border-t shadow z-50 flex">
-        {navItems.map((item) => {
-          const Icon = item.icon;
-          const active = location.pathname === item.path;
-
-          return (
-            <button
-              key={item.label}
-              onClick={() => navigate(item.path)}
-              className={`flex-1 py-4 flex flex-col items-center justify-center relative
-                ${active ? "text-green-600" : "text-gray-500"}`}
-            >
-              <Icon size={22} />
-
-              {item.showBadge && unreadCount > 0 && (
-                <span className="absolute top-2 right-[35%] bg-red-600 text-white text-xs rounded-full min-w-[16px] px-1 text-center">
-                  {unreadCount}
-                </span>
-              )}
-            </button>
-          );
-        })}
+      {/* Mobile Bottom Navigation */}
+      <div className="md:hidden fixed bottom-0 left-0 w-full bg-white shadow-t border-t z-50 flex">
+        {navItems.map((item) => (
+          <button
+            key={item.label}
+            onClick={() => navigate(item.path)}
+            className={`flex-1 py-5 flex flex-col items-center justify-center text-gray-600 hover:text-green-600 transition-colors
+        ${location.pathname === item.path ? "text-green-600" : ""}
+      `}
+          >
+            {item.icon}
+            {/* <span className="text- mt-1 text-center whitespace-normal break-words">{item.label}</span> */}
+          </button>
+        ))}
       </div>
+
     </>
   );
 };

@@ -1,10 +1,13 @@
 import React, { useState, useMemo } from "react";
 import basketImg from "../../assets/Images/basket.png";
+import { Plus } from "lucide-react";
 
 // UI Components
 import { Button } from "../../components/ui/Button";
 import { Card } from "../../components/ui/Card";
 import { Input } from "../../components/ui/Input";
+
+import { useBasket } from "../../context/BasketContext";
 
 const RATE_PER_KM = 5;
 
@@ -15,15 +18,14 @@ const vendors = [
 ];
 
 const products = [
-  { id: 1, name: "Tomato", unit: "per kg", price: 20 },
-  { id: 2, name: "Potato", unit: "per kg", price: 15 },
-  { id: 3, name: "Apple", unit: "per kg", price: 30 },
-  { id: 4, name: "Onion", unit: "per kg", price: 18 },
+  { id: 1, name: "Tomato", price: 20 },
+  { id: 2, name: "Potato", price: 15 },
+  { id: 3, name: "Apple", price: 30 },
 ];
 
 const BasketEstimator = () => {
   const [search, setSearch] = useState("");
-  const [basket, setBasket] = useState([]);
+  const { basket, addToBasket, removeFromBasket, basketTotal } = useBasket();
   const [showVendors, setShowVendors] = useState(false);
 
   const filteredProducts = useMemo(
@@ -34,47 +36,26 @@ const BasketEstimator = () => {
     [search]
   );
 
-  // Update basket using only productId
-  const updateBasket = (productId, action) => {
-    setBasket((prev) => {
-      const index = prev.findIndex((item) => item.id === productId);
-
-      // Add new product if not in basket
-      if (index === -1 && action === "add") {
-        const product = products.find((p) => p.id === productId);
-        return [...prev, { ...product, qty: 1 }];
-      }
-
-      // Update quantity if exists
-      if (index !== -1) {
-        const updated = [...prev];
-        if (action === "add") updated[index].qty += 1;
-        else if (action === "subtract") {
-          updated[index].qty -= 1;
-          if (updated[index].qty <= 0) updated.splice(index, 1);
-        }
-        return updated;
-      }
-
-      return prev;
-    });
-  };
-
   const totalItems = basket.reduce((sum, item) => sum + item.qty, 0);
 
-  const itemsTotal = basket.reduce((sum, item) => sum + item.price * item.qty, 0);
-
-  const vendorTotal = (vendor) => itemsTotal + vendor.distance * RATE_PER_KM;
+  const vendorTotal = (vendor) => basketTotal + vendor.distance * RATE_PER_KM;
 
   const cheapestVendor = basket.length
     ? vendors.reduce((a, b) => (vendorTotal(a) < vendorTotal(b) ? a : b))
     : null;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-10">
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto_1fr] gap-8 items-start">
+    <div className="max-w-7xl mx-auto px-6 py-10">
+      {/* Header */}
+      <div className="mb-10">
+        <h1 className="text-3xl font-bold text-gray-900">Basket Estimator</h1>
+        <p className="text-gray-500 mt-1">
+          Build your basket and find the best nearby vendor
+        </p>
+      </div>
 
-        {/* LEFT SIDE: Products List */}
+      <div className="grid lg:grid-cols-3 gap-12 items-start">
+        {/* PRODUCTS */}
         <Card className="p-6">
           <h2 className="text-lg font-semibold mb-4">Search & Add Items</h2>
           <Input
@@ -84,17 +65,21 @@ const BasketEstimator = () => {
           />
           <div className="mt-4 space-y-2">
             {filteredProducts.map((p) => (
-              <div key={p.id} className="flex justify-between items-center">
-                <span className="text-sm">{p.name} ({p.unit})</span>
-                <Button size="sm" onClick={() => updateBasket(p.id, "add")}>
-                  Add
-                </Button>
-              </div>
+              <button
+                key={p.id}
+                onClick={() => addToBasket(p)}
+                className="w-full flex items-center justify-between py-3 border-b hover:text-green-600 transition"
+              >
+                <span className="font-medium">{p.name}</span>
+                <span className="flex items-center gap-2 text-sm">
+                  ₹{p.price} <Plus size={16} />
+                </span>
+              </button>
             ))}
           </div>
         </Card>
 
-        {/* MIDDLE: Basket Image + Inputs + Summary */}
+        {/* BASKET SUMMARY */}
         <div className="relative flex flex-col items-center w-full">
           <div className="relative z-10 mb-4">
             <Button
@@ -113,13 +98,16 @@ const BasketEstimator = () => {
             <div className="w-64 bg-white p-4 rounded-md shadow-md border border-gray-200">
               <h3 className="font-medium text-center mb-3">Basket Summary</h3>
               {basket.map((item) => (
-                <div key={item.id} className="flex justify-between items-center mb-2">
+                <div
+                  key={item.id}
+                  className="flex justify-between items-center mb-2"
+                >
                   <span className="font-medium">{item.name}</span>
                   <div className="flex items-center gap-2">
                     <Button
                       size="icon"
                       variant="outline"
-                      onClick={() => updateBasket(item.id, "subtract")}
+                      onClick={() => removeFromBasket(item.id)}
                     >
                       −
                     </Button>
@@ -127,7 +115,7 @@ const BasketEstimator = () => {
                     <Button
                       size="icon"
                       variant="outline"
-                      onClick={() => updateBasket(item.id, "add")}
+                      onClick={() => addToBasket(item)}
                     >
                       +
                     </Button>
@@ -142,7 +130,7 @@ const BasketEstimator = () => {
           )}
         </div>
 
-        {/* RIGHT SIDE: Vendor Comparison */}
+        {/* VENDOR COMPARISON */}
         <Card className="p-6">
           <h2 className="text-lg font-semibold mb-4">Vendor Comparison</h2>
           {!showVendors ? (
@@ -177,7 +165,6 @@ const BasketEstimator = () => {
             })
           )}
         </Card>
-
       </div>
     </div>
   );
