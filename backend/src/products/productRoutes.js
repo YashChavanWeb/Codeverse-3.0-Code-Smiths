@@ -10,6 +10,7 @@ import {
   updateProductStock,
   updateProductAvailable,
   deleteProduct,
+  getVendorsWithProducts,
   getProductImageByName,
 } from "./productController.js";
 
@@ -22,6 +23,7 @@ const router = express.Router();
  * @desc    Get products with filters (city, category, price, stockStatus) and pagination
  */
 router.get("/location", getProductsByLocation);
+router.get("/vendors-with-products", getVendorsWithProducts);
 router.get("/lookup-image", getProductImageByName);
 
 /**

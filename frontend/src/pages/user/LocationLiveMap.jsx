@@ -70,8 +70,8 @@ const LiveLocationMap = () => {
 
         {filteredVendors.length > 0 && !showList && (
           <Button
-          variant='secondary'
-          size='sm'
+            variant='secondary'
+            size='sm'
             onClick={() => setShowList(true)}
             className="md:hidden fixed bottom-18 left-1/2 -translate-x-1/2 px-4 py-2 rounded-full flex items-center gap-2 shadow-lg"
           >
