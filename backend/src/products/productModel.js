@@ -24,10 +24,15 @@ const productSchema = new mongoose.Schema(
       enum: ["kg", "bunch", "piece", "box", "dozen"], // Matches your data units
     },
     stock: {
-      type: Number,
-      required: true,
-      min: 0, // Prevents negative stock
-      default: 0,
+      current: {
+        type: Number,
+        min: 0,
+        default: 0,
+      },
+      before: {
+        type: Number,
+        default: 0,
+      },
     },
     available: {
       type: Boolean,

@@ -34,17 +34,19 @@ const getProductsByLocation = async (req, res) => {
     }
 
     if (stockStatus) {
-      if (stockStatus === "low") filter.stock = { $gt: 0, $lt: 10 };
-      else if (stockStatus === "med") filter.stock = { $gte: 10, $lte: 50 };
-      else if (stockStatus === "high") filter.stock = { $gt: 50 };
-      else if (stockStatus === "out") filter.stock = 0;
+      // Updated to query nested stock.current field
+      if (stockStatus === "low") filter["stock.current"] = { $gt: 0, $lt: 10 };
+      else if (stockStatus === "med")
+        filter["stock.current"] = { $gte: 10, $lte: 50 };
+      else if (stockStatus === "high") filter["stock.current"] = { $gt: 50 };
+      else if (stockStatus === "out") filter["stock.current"] = 0;
     }
 
     let sortOptions = {};
     if (sortByPrice) {
       sortOptions.price = sortByPrice === "asc" ? 1 : -1;
     } else if (sortByStock) {
-      sortOptions.stock = sortByStock === "asc" ? 1 : -1;
+      sortOptions["stock.current"] = sortByStock === "asc" ? 1 : -1;
     } else {
       sortOptions.createdAt = -1;
     }
@@ -66,11 +68,13 @@ const getProductsByLocation = async (req, res) => {
       data: products,
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Error fetching products",
-      error: error.message,
-    });
+    res
+      .status(500)
+      .json({
+        success: false,
+        message: "Error fetching products",
+        error: error.message,
+      });
   }
 };
 
@@ -92,17 +96,21 @@ const getProductById = async (req, res) => {
 const createProduct = async (req, res) => {
   try {
     const { name, category, price, unit, stock } = req.body;
+
     const newProduct = new Product({
       name,
       category,
       price,
       unit,
-      stock,
+      stock: {
+        current: stock, // Incoming stock value set as current
+        before: 0, // Default before is 0 on creation
+      },
       vendor: req.user._id,
     });
+
     await newProduct.save();
 
-    // SSE: Notify about new product addition
     productEvents.emit("productUpdate", {
       type: "NEW_PRODUCT",
       product: newProduct,
@@ -148,7 +156,6 @@ const updateProductPrice = async (req, res) => {
     check.product.price = req.body.price;
     await check.product.save();
 
-    // SSE: Notify about price change
     productEvents.emit("productUpdate", {
       type: "PRICE_UPDATE",
       productId: check.product._id,
@@ -168,14 +175,19 @@ const updateProductStock = async (req, res) => {
     if (check.error)
       return res.status(check.status).json({ message: check.error });
 
-    check.product.stock = req.body.stock;
+    const newStockValue = req.body.stock;
+
+    // Core Logic: Shift current to before, then update current
+    check.product.stock.before = check.product.stock.current;
+    check.product.stock.current = newStockValue;
+
     await check.product.save();
 
-    // SSE: Notify about stock change
     productEvents.emit("productUpdate", {
       type: "STOCK_UPDATE",
       productId: check.product._id,
-      newStock: check.product.stock,
+      newStock: check.product.stock.current,
+      previousStock: check.product.stock.before,
     });
 
     res.status(200).json(check.product);

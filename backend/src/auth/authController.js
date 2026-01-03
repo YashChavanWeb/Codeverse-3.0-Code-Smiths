@@ -91,4 +91,29 @@ const signin = async (req, res) => {
   }
 };
 
-export { signup, signin };
+// GET /vendors?city=Vasai
+const getVendorsByLocation = async (req, res) => {
+  const { city } = req.query;
+
+  try {
+    if (!city) {
+      return res.status(400).json({ message: "City parameter is required" });
+    }
+
+    const vendors = await User.find({
+      role: "vendor",
+      location: new RegExp(city, "i"), // Case-insensitive matching
+    }).select("-password"); // Security: Exclude hashed passwords from response
+
+    res.status(200).json({
+      success: true,
+      count: vendors.length,
+      data: vendors,
+    });
+  } catch (error) {
+    console.error("Error fetching vendors:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+export { signup, signin, getVendorsByLocation };
