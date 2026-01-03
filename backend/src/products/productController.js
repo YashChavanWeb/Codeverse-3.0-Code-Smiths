@@ -1,7 +1,7 @@
 import { Product } from "./productModel.js";
 import { User } from "../auth/authModel.js";
 import productEvents from "../utils/events.js";
-import { addToQueue } from "../queue/Productqueue.js";
+import { addToQueue } from "../queue/productQueue.js";
 
 // GET /location
 const getProductsByLocation = async (req, res) => {

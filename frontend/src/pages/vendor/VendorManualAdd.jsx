@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
+import { useAuth } from "../../context/AuthContext"; // Import your auth hook
 import {
   Card,
   CardHeader,
@@ -10,14 +12,18 @@ import {
 
 const VendorManualAdd = () => {
   const navigate = useNavigate();
+  const { token } = useAuth(); // Get token for the header
 
   const [formData, setFormData] = useState({
     category: "vegetable",
     name: "",
     price: "",
-    quantity: "",
+    quantity: "", // This will be sent as 'stock'
+    unit: "kg",     // Added to match backend requirements
     available: true,
   });
+
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -27,14 +33,40 @@ const VendorManualAdd = () => {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
 
-    console.log("Submitted item:", formData);
+    try {
+      // Mapping frontend state to backend requirements
+      const payload = {
+        name: formData.name,
+        category: formData.category.charAt(0).toUpperCase() + formData.category.slice(1), // Capitalize
+        price: Number(formData.price),
+        unit: formData.unit,
+        stock: Number(formData.quantity),
+      };
 
-    // later: API call goes here
+      const response = await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL}/products`,
+        payload,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
-    navigate("/vendor/add");
+      if (response.status === 201 || response.data) {
+        alert("Product added successfully!");
+        navigate("/vendor/inventory"); // Navigate to your list page
+      }
+    } catch (error) {
+      console.error("Error adding product:", error);
+      alert(error.response?.data?.message || "Failed to add product");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -59,7 +91,7 @@ const VendorManualAdd = () => {
                   name="category"
                   value={formData.category}
                   onChange={handleChange}
-                  className="w-full"
+                  className="w-full p-2 border rounded-md" // Added basic styling to match Input
                 >
                   <option value="vegetable">Vegetable</option>
                   <option value="fruit">Fruit</option>
@@ -76,20 +108,38 @@ const VendorManualAdd = () => {
                 required
               />
 
-              {/* Price */}
-              <Input
-                label="Price (₹)"
-                name="price"
-                type="number"
-                placeholder="40"
-                value={formData.price}
-                onChange={handleChange}
-                required
-              />
+              <div className="flex gap-4">
+                {/* Price */}
+                <div className="flex-1">
+                  <Input
+                    label="Price (₹)"
+                    name="price"
+                    type="number"
+                    placeholder="40"
+                    value={formData.price}
+                    onChange={handleChange}
+                    required
+                  />
+                </div>
+                {/* Unit Select - Necessary for backend */}
+                <div className="w-1/3">
+                  <label className="block text-sm font-medium mb-1">Unit</label>
+                  <select
+                    name="unit"
+                    value={formData.unit}
+                    onChange={handleChange}
+                    className="w-full p-2 border rounded-md text-sm h-[40px]"
+                  >
+                    <option value="kg">kg</option>
+                    <option value="units">units</option>
+                    <option value="bunch">bunch</option>
+                  </select>
+                </div>
+              </div>
 
-              {/* Quantity */}
+              {/* Quantity (Stock) */}
               <Input
-                label="Quantity (kg / units)"
+                label="Quantity (Stock)"
                 name="quantity"
                 type="number"
                 placeholder="10"
@@ -103,10 +153,11 @@ const VendorManualAdd = () => {
                 <input
                   type="checkbox"
                   name="available"
+                  id="available"
                   checked={formData.available}
                   onChange={handleChange}
                 />
-                <span className="text-sm">Available for sale</span>
+                <label htmlFor="available" className="text-sm">Available for sale</label>
               </div>
 
               {/* Actions */}
@@ -119,8 +170,8 @@ const VendorManualAdd = () => {
                 >
                   Cancel
                 </Button>
-                <Button type="submit" className="w-full">
-                  Add Item
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading ? "Adding..." : "Add Item"}
                 </Button>
               </div>
             </form>
