@@ -1,18 +1,16 @@
 import { Basket } from "./basketModel.js";
 import { Product } from "../products/productModel.js";
+import productEvents from "../utils/events.js";
 
 const addToBasket = async (req, res) => {
   const { productId } = req.body;
-
   try {
-    // 1. Fetch product to get vendor and location context
     const product = await Product.findById(productId).populate(
       "vendor",
       "location"
     );
     if (!product) return res.status(404).json({ message: "Product not found" });
 
-    // 2. Atomic Upsert: Increment demandCount if exists, else create new
     const basketEntry = await Basket.findOneAndUpdate(
       { product: productId, location: product.vendor.location },
       {
@@ -22,16 +20,26 @@ const addToBasket = async (req, res) => {
       { upsert: true, new: true }
     );
 
-    res.status(200).json({
-      success: true,
-      message: "Demand registered",
-      demandCount: basketEntry.demandCount,
+    // Recalculate index if stock exists
+    if (product.stock.current > 0) {
+      basketEntry.demandIndex = Math.round(
+        (basketEntry.demandCount / product.stock.current) * 100
+      );
+      await basketEntry.save();
+    }
+
+    // BROADCAST DEMAND CHANGE
+    productEvents.emit("demandUpdate", {
+      type: "DEMAND_ANALYTICS",
       location: basketEntry.location,
+      productId: productId,
+      demandIndex: basketEntry.demandIndex,
+      demandCount: basketEntry.demandCount,
     });
+
+    res.status(200).json({ success: true, data: basketEntry });
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Error updating basket demand", error: error.message });
+    res.status(500).json({ message: "Error", error: error.message });
   }
 };
 

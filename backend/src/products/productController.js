@@ -210,6 +210,14 @@ const updateProductStock = async (req, res) => {
       demandIndex: basket ? basket.demandIndex : 0,
     });
 
+    productEvents.emit("demandUpdate", {
+      type: "DEMAND_ANALYTICS",
+      location: req.user.location,
+      productId: check.product._id,
+      demandIndex: basket.demandIndex,
+      demandCount: basket.demandCount,
+    });
+
     res.status(200).json(check.product);
   } catch (error) {
     res.status(400).json({ message: "Stock update failed" });
