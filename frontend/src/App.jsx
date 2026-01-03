@@ -5,6 +5,8 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-route
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import ProtectedRoute from "./routes/ProtectedRoute";
 
+import { NotificationProvider } from "./context/NotificationContext";
+
 // Components
 import Drawer from "./components/ui/Drawer";
 
@@ -29,6 +31,9 @@ import VendorProducts from "./pages/vendor/VendorProducts";
 import LiveMap from "./components/LiveMap";
 import Dashboard from "./pages/user/DashboardPage";
 import LocationLiveMap from "./pages/user/LocationLiveMap";
+import LandingPage from "./pages/LandingPage";
+
+import NotificationPanel from "./components/NotificationPanel";
 
 
 
@@ -52,7 +57,7 @@ const AppContent = () => {
       >
         <Routes>
           {/* Public Routes */}
-          <Route path="/select-role" element={<RoleSelection />} />
+          {/* <Route path="/select-role" element={<RoleSelection />} /> */}
           <Route path="/signup" element={<Signup />} />
           <Route path="/signin" element={<Signin />} />
 
@@ -61,15 +66,15 @@ const AppContent = () => {
             path="/"
             element={
               isAuthenticated ? (
-                <ProtectedRoute roles={["user"]}>
-                  <Dashboard />
+                <ProtectedRoute roles={["user", "vendor"]}>
+                  {/* You can choose a default dashboard based on role */}
+                  <Dashboard /> 
                 </ProtectedRoute>
               ) : (
-                <Navigate to="/select-role" replace />
+                <LandingPage /> // show landing page for unauthenticated users
               )
             }
-          />
-
+/>
           {/* User Protected Routes */}
           <Route
             path="/basket-estimator"
@@ -84,6 +89,15 @@ const AppContent = () => {
             element={
               <ProtectedRoute roles={["user"]}>
                 <LiveMap />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/notifications"
+            element={
+              <ProtectedRoute roles={["user", "vendor"]}>
+                <NotificationPanel />
               </ProtectedRoute>
             }
           />
@@ -164,14 +178,14 @@ const AppContent = () => {
   );
 };
 
-const App = () => {
-  return (
-    <AuthProvider>
+const App = () => (
+  <AuthProvider>
+    <NotificationProvider>
       <BrowserRouter>
         <AppContent />
       </BrowserRouter>
-    </AuthProvider>
-  );
-};
+    </NotificationProvider>
+  </AuthProvider>
+);
 
 export default App;
