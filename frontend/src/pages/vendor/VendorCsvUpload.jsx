@@ -1,5 +1,9 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import Papa from "papaparse"; // Import PapaParse for parsing
+import axios from "axios";
+import { useAuth } from "../../context/AuthContext";
+import { Loader2 } from "lucide-react";
 import {
   Card,
   CardHeader,
@@ -9,12 +13,13 @@ import {
 
 const VendorCsvUpload = () => {
   const navigate = useNavigate();
+  const { token } = useAuth();
   const [file, setFile] = useState(null);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0];
-
     if (!selectedFile) return;
 
     if (!selectedFile.name.endsWith(".csv")) {
@@ -35,11 +40,50 @@ const VendorCsvUpload = () => {
       return;
     }
 
-    console.log("CSV file submitted:", file);
+    setLoading(true);
 
-    // later: send file to backend using FormData
+    // Parse CSV file
+    Papa.parse(file, {
+      header: true, // Assumes first row is name, category, price, etc.
+      skipEmptyLines: true,
+      complete: async (results) => {
+        try {
+          const products = results.data;
 
-    navigate("/vendor/add");
+          // Use Promise.all to add all products from the CSV
+          const uploadPromises = products.map((item) => {
+            // Transform keys to match your backend schema
+            const payload = {
+              name: item.name,
+              category: item.category.charAt(0).toUpperCase() + item.category.slice(1).toLowerCase(),
+              price: Number(item.price),
+              unit: item.unit || "kg",
+              stock: Number(item.quantity || item.stock),
+            };
+
+            return axios.post(
+              `${import.meta.env.VITE_BACKEND_URL}/products`,
+              payload,
+              { headers: { Authorization: `Bearer ${token}` } }
+            );
+          });
+
+          await Promise.all(uploadPromises);
+
+          alert(`Successfully uploaded ${products.length} products!`);
+          navigate("/vendor/inventory");
+        } catch (err) {
+          console.error("Bulk upload error:", err);
+          setError("Failed to upload products. Check your CSV formatting.");
+        } finally {
+          setLoading(false);
+        }
+      },
+      error: (err) => {
+        setError("Error parsing CSV: " + err.message);
+        setLoading(false);
+      }
+    });
   };
 
   return (
@@ -63,8 +107,14 @@ const VendorCsvUpload = () => {
                 <input
                   type="file"
                   accept=".csv"
+                  disabled={loading}
                   onChange={handleFileChange}
-                  className="w-full"
+                  className="w-full text-sm text-slate-500
+                    file:mr-4 file:py-2 file:px-4
+                    file:rounded-full file:border-0
+                    file:text-sm file:font-semibold
+                    file:bg-blue-50 file:text-blue-700
+                    hover:file:bg-blue-100"
                 />
                 {file && (
                   <p className="text-sm text-foreground-muted mt-1">
@@ -72,16 +122,18 @@ const VendorCsvUpload = () => {
                   </p>
                 )}
                 {error && (
-                  <p className="text-sm text-error mt-1">{error}</p>
+                  <p className="text-sm text-red-500 mt-1 font-medium">{error}</p>
                 )}
               </div>
 
               {/* CSV format hint */}
-              <div className="text-sm text-foreground-muted bg-secondary rounded-md p-3">
-                <p className="font-medium mb-1">Expected CSV format:</p>
-                <p>category, name, price, quantity, available</p>
-                <p className="mt-1">
-                  Example: vegetable, Tomato, 40, 10, true
+              <div className="text-sm text-foreground-muted bg-slate-50 rounded-md p-3 border border-slate-100">
+                <p className="font-semibold text-slate-700 mb-1">Expected CSV Headers:</p>
+                <code className="text-xs bg-white p-1 block border rounded mb-2">
+                  name, category, price, unit, quantity
+                </code>
+                <p className="text-xs font-medium text-slate-500">
+                  Example: Mango, Fruit, 200, kg, 140
                 </p>
               </div>
 
@@ -91,12 +143,19 @@ const VendorCsvUpload = () => {
                   type="button"
                   variant="secondary"
                   className="w-full"
+                  disabled={loading}
                   onClick={() => navigate("/vendor/add")}
                 >
                   Cancel
                 </Button>
-                <Button type="submit" className="w-full">
-                  Upload CSV
+                <Button type="submit" className="w-full" disabled={loading || !file}>
+                  {loading ? (
+                    <span className="flex items-center gap-2">
+                      <Loader2 className="w-4 h-4 animate-spin" /> Uploading...
+                    </span>
+                  ) : (
+                    "Upload CSV"
+                  )}
                 </Button>
               </div>
             </form>

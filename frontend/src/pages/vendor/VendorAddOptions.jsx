@@ -1,5 +1,8 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
+import { useAuth } from "../../context/AuthContext"; // Import your auth hook
+import { Loader2 } from "lucide-react";
 import {
   Card,
   CardHeader,
@@ -10,25 +13,58 @@ import {
 
 const VendorAddOptions = () => {
   const navigate = useNavigate();
+  const { token } = useAuth(); // Get token for the header
 
-  // 🔹 Table Columns
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // 🔹 API Configuration
+  const BASE_URL = `${import.meta.env.VITE_BACKEND_URL}/products`;
+  const config = {
+    headers: { Authorization: `Bearer ${token}` },
+  };
+
+  // 🔹 Fetch Products from Backend
+  const fetchProducts = async () => {
+    if (!token) return;
+    try {
+      setLoading(true);
+      const response = await axios.get(`${BASE_URL}/location`, config);
+      if (response.data.success) {
+        setProducts(response.data.data);
+      }
+    } catch (error) {
+      console.error("Error fetching products:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProducts();
+  }, [token]);
+
+  // 🔹 Table Columns (3 Columns as requested)
   const columns = [
-    { header: "Product Name", accessor: "name" },
-    { header: "Price", accessor: "price" },
-    { header: "Stock Status", accessor: "status" },
-  ];
-
-  // 🔹 Table Data (later replace with backend API response)
-  const productData = [
     {
-      name: "Tomato",
-      price: "₹30/kg",
-      status: <span className="text-green-600 font-medium">Available</span>,
+      header: "Product Name",
+      accessor: "name"
     },
     {
-      name: "Onion",
-      price: "₹40/kg",
-      status: <span className="text-red-600 font-medium">Out of Stock</span>,
+      header: "Price",
+      cell: (row) => `₹${row.price}/${row.unit}`
+    },
+    {
+      header: "Stock Status",
+      cell: (row) => {
+        const stockCount = row.stock?.current ?? row.stock;
+        const isAvailable = row.available && stockCount > 0;
+        return (
+          <span className={`font-medium ${isAvailable ? "text-green-600" : "text-red-600"}`}>
+            {isAvailable ? "Available" : "Out of Stock"}
+          </span>
+        );
+      }
     },
   ];
 
@@ -103,7 +139,13 @@ const VendorAddOptions = () => {
           </CardHeader>
 
           <CardContent>
-            <Table columns={columns} data={productData} />
+            {loading ? (
+              <div className="flex justify-center py-10">
+                <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
+              </div>
+            ) : (
+              <Table columns={columns} data={products} />
+            )}
           </CardContent>
         </Card>
 
