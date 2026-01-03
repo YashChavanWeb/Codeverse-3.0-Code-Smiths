@@ -1,8 +1,8 @@
 import React, { useState } from "react";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 
 // Context & Routes
-import { AuthProvider } from "./context/AuthContext";
+import { AuthProvider, useAuth } from "./context/AuthContext";
 import ProtectedRoute from "./routes/ProtectedRoute";
 
 // Components
@@ -24,17 +24,26 @@ import VendorManualAdd from "./pages/vendor/VendorManualAdd";
 import VendorCsvUpload from "./pages/vendor/VendorCsvUpload";
 import VendorVoiceAdd from "./pages/vendor/VendorVoiceAdd";
 import VendorProducts from "./pages/vendor/VendorProducts";
+import LiveMap from "./components/LiveMap";
 
-const App = () => {
+const AppContent = () => {
   const [drawerOpen, setDrawerOpen] = useState(true);
+  const { isAuthenticated } = useAuth();
+  const location = useLocation();
+
+  // Public routes where we don't want the drawer or the sidebar margin
+  const publicRoutes = ["/signin", "/signup", "/select-role"];
+  const isPublicRoute = publicRoutes.includes(location.pathname);
+  const showDrawer = isAuthenticated && !isPublicRoute;
 
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        {/* 1. Drawer is now INSIDE BrowserRouter, so useNavigate() works */}
-        {/* 2. We pass drawerOpen and setDrawerOpen as props */}
-        <Drawer open={drawerOpen} onToggle={setDrawerOpen} />
+    <div className="flex min-h-screen bg-gray-50">
+      {showDrawer && <Drawer open={drawerOpen} onToggle={setDrawerOpen} />}
 
+      <main
+        className={`flex-1 flex flex-col transition-all duration-300 ${showDrawer ? (drawerOpen ? "md:ml-64" : "md:ml-20") : ""
+          }`}
+      >
         <Routes>
           {/* Public Routes */}
           <Route path="/select-role" element={<RoleSelection />} />
@@ -67,6 +76,14 @@ const App = () => {
             element={
               <ProtectedRoute roles={["vendor"]}>
                 <VendorDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/location-vendors"
+            element={
+              <ProtectedRoute roles={["user"]}>
+                <LiveMap />
               </ProtectedRoute>
             }
           />
@@ -114,6 +131,16 @@ const App = () => {
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/signin" replace />} />
         </Routes>
+      </main>
+    </div>
+  );
+};
+
+const App = () => {
+  return (
+    <AuthProvider>
+      <BrowserRouter>
+        <AppContent />
       </BrowserRouter>
     </AuthProvider>
   );

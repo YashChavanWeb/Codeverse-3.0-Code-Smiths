@@ -3,9 +3,19 @@ import { User } from "../auth/authModel.js";
 import productEvents from "../utils/events.js";
 import { addToQueue } from "../queue/Productqueue.js";
 
-/* ---------- GET PRODUCTS ---------- */
+// GET /location
 const getProductsByLocation = async (req, res) => {
-  const { city, page = 1, limit = 10 } = req.query;
+  const {
+    city,
+    category,
+    minPrice,
+    maxPrice,
+    stockStatus,
+    sortByPrice,
+    sortByStock,
+    page = 1,
+    limit = 10,
+  } = req.query;
 
   try {
     const vendors = await User.find({
@@ -13,22 +23,57 @@ const getProductsByLocation = async (req, res) => {
       role: "vendor",
     }).select("_id");
 
-    const vendorIds = vendors.map(v => v._id);
+    const vendorIds = vendors.map((v) => v._id);
+    const filter = { vendor: { $in: vendorIds } };
 
-    const products = await Product.find({ vendor: { $in: vendorIds } })
+    if (category) filter.category = category;
+
+    if (minPrice || maxPrice) {
+      filter.price = {};
+      if (minPrice) filter.price.$gte = Number(minPrice);
+      if (maxPrice) filter.price.$lte = Number(maxPrice);
+    }
+
+    if (stockStatus) {
+      // Updated to query nested stock.current field
+      if (stockStatus === "low") filter["stock.current"] = { $gt: 0, $lt: 10 };
+      else if (stockStatus === "med")
+        filter["stock.current"] = { $gte: 10, $lte: 50 };
+      else if (stockStatus === "high") filter["stock.current"] = { $gt: 50 };
+      else if (stockStatus === "out") filter["stock.current"] = 0;
+    }
+
+    let sortOptions = {};
+    if (sortByPrice) {
+      sortOptions.price = sortByPrice === "asc" ? 1 : -1;
+    } else if (sortByStock) {
+      sortOptions["stock.current"] = sortByStock === "asc" ? 1 : -1;
+    } else {
+      sortOptions.createdAt = -1;
+    }
+
+    const skip = (Number(page) - 1) * Number(limit);
+    const products = await Product.find(filter)
       .populate("vendor", "storeName location")
-      .skip((page - 1) * limit)
+      .sort(sortOptions)
+      .skip(skip)
       .limit(Number(limit));
 
-    const total = await Product.countDocuments({ vendor: { $in: vendorIds } });
+    const total = await Product.countDocuments(filter);
 
-    res.json({
+    res.status(200).json({
       success: true,
       total,
+      page: Number(page),
+      pages: Math.ceil(total / limit),
       data: products,
     });
-  } catch (err) {
-    res.status(500).json({ message: "Fetch failed" });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Error fetching products",
+      error: error.message,
+    });
   }
 };
 

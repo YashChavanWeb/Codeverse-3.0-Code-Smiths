@@ -17,10 +17,10 @@ import {
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 
-const Drawer = ({ open, onToggle, role = "vendor" }) => {
+const Drawer = ({ open, onToggle, role: propRole }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { logout } = useAuth();
+  const { logout, role: authRole, isAuthenticated } = useAuth();
   const [isMobile, setIsMobile] = useState(false);
 
   // 1. Handle Screen Resize
@@ -31,11 +31,20 @@ const Drawer = ({ open, onToggle, role = "vendor" }) => {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // 2. Prevent scroll when mobile drawer is open
+  // 2. Hide Drawer logic
+  const publicRoutes = ["/signin", "/signup", "/select-role"];
+  const isPublicRoute = publicRoutes.includes(location.pathname);
+
+  // Prevent scroll when mobile drawer is open
   useEffect(() => {
-    document.body.style.overflow = isMobile && open ? "hidden" : "unset";
+    document.body.style.overflow = isMobile && open && !isPublicRoute ? "hidden" : "unset";
     return () => (document.body.style.overflow = "unset");
-  }, [open, isMobile]);
+  }, [open, isMobile, isPublicRoute]);
+
+  if (isPublicRoute || !isAuthenticated) return null;
+
+  // Determine role: prop > auth > default user
+  const role = propRole || authRole || "user";
 
   const handleLogout = () => {
     logout();
