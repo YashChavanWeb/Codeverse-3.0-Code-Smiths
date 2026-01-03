@@ -1,29 +1,36 @@
 @import "tailwindcss";
 @import 'leaflet/dist/leaflet.css';
 
+/* Theme tokens */
 @theme {
   /* 🌿 Core Brand Colors */
-  --color-primary: #1a7431;          /* turf_green */
-  --color-primary-hover: #155d27;    /* dark_emerald */
+  --color-primary: #1a7431;
+  /* turf_green */
+  --color-primary-hover: #155d27;
+  /* dark_emerald */
   --color-primary-foreground: #f6fbf2;
 
-  --color-jungle: #2fcd56;        /* medium_jungle */
+  --color-jungle: #2fcd56;
+  /* medium_jungle */
   --color-secondary: #92edb0;
   --color-secondary-hover: #1eb34f;
   --color-secondary-foreground: #102a01;
 
-  --color-accent: #b7efc5;           /* celadon */
+  --color-accent: #b7efc5;
+  /* celadon */
 
   /* 🌱 Surfaces */
   --color-background: #f6fbf2;
   --color-background-alt: #e9faf0;
-  --color-background-glass: rgba(255,255,255,0.35);
+  --color-background-glass: rgba(255, 255, 255, 0.35);
   --color-foreground: #102a01;
   --color-foreground-muted: #5f7a4c;
 
   /* 🌲 Borders & States */
-  --color-border: rgba(26, 116, 49, 0.25); /* turf_green alpha */
-  --color-border-focus: #4bd66e;           /* malachite */
+  --color-border: rgba(26, 116, 49, 0.25);
+  /* turf_green alpha */
+  --color-border-focus: #4bd66e;
+  /* malachite */
 
   --color-success: #34d15b;
   --color-warning: #a9ebb9;
@@ -35,14 +42,16 @@
   --radius-lg: 999px;
 }
 
-/* Base Styles */
+/* Base styles */
 @layer base {
   body {
     @apply bg-[var(--color-background)] text-[var(--color-foreground)] antialiased;
     font-family: 'Poppins', system-ui, sans-serif;
   }
 
-  h1, h2, h3 {
+  h1,
+  h2,
+  h3 {
     @apply font-semibold text-[var(--color-foreground)];
   }
 
@@ -50,7 +59,10 @@
     @apply text-[var(--color-primary)] hover:text-[var(--color-primary-hover)];
   }
 
-  button, input, select, textarea {
+  button,
+  input,
+  select,
+  textarea {
     @apply font-medium rounded-lg transition-all duration-200;
   }
 
