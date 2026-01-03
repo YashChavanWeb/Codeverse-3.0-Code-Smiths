@@ -132,21 +132,21 @@ const Drawer = ({ open, onToggle, role: propRole }) => {
         </div>
       </aside>
 
-{/* Mobile Bottom Navigation */}
-<div className="md:hidden fixed bottom-0 left-0 w-full bg-white shadow-t border-t z-50 flex">
-  {navItems.map((item) => (
-    <button
-      key={item.label}
-      onClick={() => navigate(item.path)}
-      className={`flex-1 py-5 flex flex-col items-center justify-center text-gray-600 hover:text-green-600 transition-colors
+      {/* Mobile Bottom Navigation */}
+      <div className="md:hidden fixed bottom-0 left-0 w-full bg-white shadow-t border-t z-50 flex">
+        {navItems.map((item) => (
+          <button
+            key={item.label}
+            onClick={() => navigate(item.path)}
+            className={`flex-1 py-5 flex flex-col items-center justify-center text-gray-600 hover:text-green-600 transition-colors
         ${location.pathname === item.path ? "text-green-600" : ""}
       `}
-    >
-      {item.icon}
-      {/* <span className="text- mt-1 text-center whitespace-normal break-words">{item.label}</span> */}
-    </button>
-  ))}
-</div>
+          >
+            {item.icon}
+            {/* <span className="text- mt-1 text-center whitespace-normal break-words">{item.label}</span> */}
+          </button>
+        ))}
+      </div>
 
     </>
   );

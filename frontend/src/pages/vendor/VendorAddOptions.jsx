@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import { useAuth } from "../../context/AuthContext"; // Import your auth hook
-import { Loader2 } from "lucide-react";
+import { useAuth } from "../../context/AuthContext";
+import { Loader2, ImageIcon } from "lucide-react"; // Added ImageIcon
 import {
   Card,
   CardHeader,
@@ -13,18 +13,16 @@ import {
 
 const VendorAddOptions = () => {
   const navigate = useNavigate();
-  const { token } = useAuth(); // Get token for the header
+  const { token } = useAuth();
 
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // 🔹 API Configuration
   const BASE_URL = `${import.meta.env.VITE_BACKEND_URL}/products`;
   const config = {
     headers: { Authorization: `Bearer ${token}` },
   };
 
-  // 🔹 Fetch Products from Backend
   const fetchProducts = async () => {
     if (!token) return;
     try {
@@ -44,15 +42,47 @@ const VendorAddOptions = () => {
     fetchProducts();
   }, [token]);
 
-  // 🔹 Table Columns (3 Columns as requested)
+  // 🔹 Updated Table Columns to include Image
   const columns = [
     {
-      header: "Product Name",
-      accessor: "name"
+      header: "Product",
+      accessor: "name",
+      cell: (row) => (
+        <div className="flex items-center gap-4">
+          {/* 🔹 Image Container */}
+          <div className="relative h-12 w-12 rounded-xl overflow-hidden bg-slate-100 border border-slate-200 flex-shrink-0">
+            {row.imageUrl ? (
+              <img
+                src={row.imageUrl}
+                alt={row.name}
+                className="h-full w-full object-cover"
+                onError={(e) => {
+                  e.target.onerror = null;
+                  e.target.src = "https://placehold.co/100x100?text=No+Image";
+                }}
+              />
+            ) : (
+              <div className="h-full w-full flex items-center justify-center">
+                <ImageIcon className="w-5 h-5 text-slate-300" />
+              </div>
+            )}
+          </div>
+
+          {/* 🔹 Text Details */}
+          <div className="flex flex-col">
+            <span className="font-bold text-slate-700 leading-tight">
+              {row.name}
+            </span>
+            <span className="text-[10px] uppercase text-slate-400 tracking-wider font-extrabold mt-0.5">
+              {row.category}
+            </span>
+          </div>
+        </div>
+      ),
     },
     {
       header: "Price",
-      cell: (row) => `₹${row.price}/${row.unit}`
+      cell: (row) => `₹${row.price}/${row.unit}`,
     },
     {
       header: "Stock Status",
@@ -60,24 +90,24 @@ const VendorAddOptions = () => {
         const stockCount = row.stock?.current ?? row.stock;
         const isAvailable = row.available && stockCount > 0;
         return (
-          <span className={`font-medium ${isAvailable ? "text-green-600" : "text-red-600"}`}>
+          <span
+            className={`font-medium ${isAvailable ? "text-green-600" : "text-red-600"
+              }`}
+          >
             {isAvailable ? "Available" : "Out of Stock"}
           </span>
         );
-      }
+      },
     },
   ];
 
   return (
     <div className="min-h-screen bg-background-alt px-6 py-8">
       <div className="max-w-7xl mx-auto space-y-8">
-
         {/* ================= TOP SECTION ================= */}
         <Card>
           <CardHeader>
-            <h2 className="text-3xl font-semibold">
-              Manage Your Inventory
-            </h2>
+            <h2 className="text-3xl font-semibold">Manage Your Inventory</h2>
             <p className="text-foreground-muted text-sm mt-1">
               Add or update fruits and vegetables using the options below
             </p>
@@ -85,7 +115,6 @@ const VendorAddOptions = () => {
 
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-
               <Card className="p-6 hover:shadow-lg transition">
                 <h3 className="text-xl font-semibold mb-3">Manual Entry</h3>
                 <p className="text-sm text-foreground-muted mb-6">
@@ -124,7 +153,6 @@ const VendorAddOptions = () => {
                   Use Voice
                 </Button>
               </Card>
-
             </div>
           </CardContent>
         </Card>
@@ -148,7 +176,6 @@ const VendorAddOptions = () => {
             )}
           </CardContent>
         </Card>
-
       </div>
     </div>
   );

@@ -8,7 +8,8 @@ import ProtectedRoute from "./routes/ProtectedRoute";
 // Components
 import Drawer from "./components/ui/Drawer";
 
-// Auth Pages
+// Auth & Public Pages
+import LandingPage from "./pages/LandingPage";
 import Signup from "./pages/auth/Signup";
 import Signin from "./pages/auth/Signin";
 import RoleSelection from "./pages/auth/RoleSelection";
@@ -17,7 +18,9 @@ import RoleSelection from "./pages/auth/RoleSelection";
 import Profile from "./components/Profile";
 
 // User Pages
-import BasketEstimator from "./pages/BasketEstimator";
+import Dashboard from "./pages/user/DashboardPage";
+import BasketEstimator from "./pages/user/BasketEstimator";
+import LocationLiveMap from "./pages/user/LocationLiveMap";
 
 // Vendor Pages
 import VendorDashboard from "./pages/vendor/VendorDashboard";
@@ -26,18 +29,27 @@ import VendorManualAdd from "./pages/vendor/VendorManualAdd";
 import VendorCsvUpload from "./pages/vendor/VendorCsvUpload";
 import VendorVoiceAdd from "./pages/vendor/VendorVoiceAdd";
 import VendorProducts from "./pages/vendor/VendorProducts";
-import LiveMap from "./components/LiveMap";
-import Dashboard from "./pages/user/DashboardPage";
 
 const AppContent = () => {
   const [drawerOpen, setDrawerOpen] = useState(true);
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth(); // Assuming 'user' contains role info
   const location = useLocation();
 
-  // Public routes where we don't want the drawer or the sidebar margin
-  const publicRoutes = ["/signin", "/signup", "/select-role"];
+  // Public routes: No drawer or sidebar margin
+  const publicRoutes = ["/", "/signin", "/signup", "/select-role"];
   const isPublicRoute = publicRoutes.includes(location.pathname);
   const showDrawer = isAuthenticated && !isPublicRoute;
+
+  /**
+   * Helper to determine where to redirect an authenticated user
+   * Defaults to /dashboard for users and /vendor for vendors
+   */
+  const getRedirectPath = () => {
+    // If your auth context doesn't have the role, 
+    // you can use localStorage.getItem("role")
+    const role = user?.role || localStorage.getItem("role");
+    return role === "vendor" ? "/vendor" : "/dashboard";
+  };
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -48,26 +60,46 @@ const AppContent = () => {
           }`}
       >
         <Routes>
-          {/* Public Routes */}
-          <Route path="/select-role" element={<RoleSelection />} />
-          <Route path="/signup" element={<Signup />} />
-          <Route path="/signin" element={<Signin />} />
-
-          {/* Root Route with Logic for Unauthenticated Users */}
+          {/* ROOT ROUTE: 
+            If logged in, go to Dashboard. If not, show LandingPage.
+          */}
           <Route
             path="/"
             element={
               isAuthenticated ? (
-                <ProtectedRoute roles={["user"]}>
-                  <Dashboard />
-                </ProtectedRoute>
+                <Navigate to={getRedirectPath()} replace />
               ) : (
-                <Navigate to="/select-role" replace />
+                <LandingPage />
               )
             }
           />
 
+          {/* SIGNIN ROUTE: 
+            Prevent logged-in users from seeing the login page again.
+          */}
+          <Route
+            path="/signin"
+            element={
+              isAuthenticated ? (
+                <Navigate to={getRedirectPath()} replace />
+              ) : (
+                <Signin />
+              )
+            }
+          />
+
+          <Route path="/select-role" element={<RoleSelection />} />
+          <Route path="/signup" element={<Signup />} />
+
           {/* User Protected Routes */}
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute roles={["user"]}>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/basket-estimator"
             element={
@@ -80,7 +112,7 @@ const AppContent = () => {
             path="/location-vendors"
             element={
               <ProtectedRoute roles={["user"]}>
-                <LiveMap />
+                <LocationLiveMap />
               </ProtectedRoute>
             }
           />
@@ -146,7 +178,7 @@ const AppContent = () => {
           />
 
           {/* Fallback */}
-          <Route path="*" element={<Navigate to="/signin" replace />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
     </div>

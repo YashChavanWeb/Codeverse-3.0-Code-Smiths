@@ -1,6 +1,6 @@
 name,category,price,unit,quantity
-Alphonso Mango,Fruit,200,kg,150
-Desi Tomato,Vegetable,40,kg,100
-Organic Spinach,Vegetable,20,bunch,50
-Green Apple,Fruit,180,kg,80
-Large Watermelon,Fruit,60,piece,30
+Mango,Fruit,200,kg,150
+Tomato,Vegetable,40,kg,100
+Potato,Vegetable,20,bunch,50
+Apple,Fruit,180,kg,80
+Watermelon,Fruit,60,piece,30

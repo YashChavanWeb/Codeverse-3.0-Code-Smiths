@@ -18,6 +18,7 @@ const getProductsByLocation = async (req, res) => {
   } = req.query;
 
   try {
+    /* 
     const vendors = await User.find({
       location: new RegExp(city, "i"),
       role: "vendor",
@@ -25,6 +26,8 @@ const getProductsByLocation = async (req, res) => {
 
     const vendorIds = vendors.map((v) => v._id);
     const filter = { vendor: { $in: vendorIds } };
+    */
+    const filter = {}; // Fetch all products irrespective of location for now
 
     if (category) filter.category = category;
 
@@ -89,13 +92,16 @@ const getProductById = async (req, res) => {
 
 /* ---------- CREATE ---------- */
 const createProduct = async (req, res) => {
-  const { name, category, price, unit, stock } = req.body;
+  const { name, category, price, unit, stock, imageUrl } = req.body;
+  const finalImageUrl =
+    imageUrl || "https://via.placeholder.com/150?text=No+Image";
 
   const product = await Product.create({
     name,
     category,
     price,
     unit,
+    imageUrl: finalImageUrl,
     stock: { current: stock, before: 0 },
     vendor: req.user._id,
   });
@@ -136,9 +142,11 @@ const updateProductTitle = async (req, res) => {
     name,
   });
 
-  res.json({ success: true, message: "Title update queued and frontend notified" });
+  res.json({
+    success: true,
+    message: "Title update queued and frontend notified",
+  });
 };
-
 
 const updateProductPrice = async (req, res) => {
   const check = await verifyOwnershipAndStore(req.params.id, req.user._id);
@@ -159,9 +167,11 @@ const updateProductPrice = async (req, res) => {
     newPrice: price,
   });
 
-  res.json({ success: true, message: "Price update queued and frontend notified" });
+  res.json({
+    success: true,
+    message: "Price update queued and frontend notified",
+  });
 };
-
 
 const updateProductStock = async (req, res) => {
   const check = await verifyOwnershipAndStore(req.params.id, req.user._id);
@@ -183,9 +193,11 @@ const updateProductStock = async (req, res) => {
     location: req.user.location,
   });
 
-  res.json({ success: true, message: "Stock update queued and frontend notified" });
+  res.json({
+    success: true,
+    message: "Stock update queued and frontend notified",
+  });
 };
-
 
 const updateProductAvailable = async (req, res) => {
   const check = await verifyOwnershipAndStore(req.params.id, req.user._id);
@@ -206,9 +218,11 @@ const updateProductAvailable = async (req, res) => {
     available,
   });
 
-  res.json({ success: true, message: "Availability update queued and frontend notified" });
+  res.json({
+    success: true,
+    message: "Availability update queued and frontend notified",
+  });
 };
-
 
 /* ---------- DELETE ---------- */
 const deleteProduct = async (req, res) => {
@@ -224,6 +238,33 @@ const deleteProduct = async (req, res) => {
   }
 };
 
+const getProductImageByName = async (req, res) => {
+  const { name } = req.query;
+
+  try {
+    if (!name) return res.status(400).json({ message: "Name is required" });
+
+    // Find one product with this name that HAS an imageUrl
+    const product = await Product.findOne({
+      name: new RegExp(`^${name}$`, "i"), // Exact match, case-insensitive
+      imageUrl: { $exists: true, $ne: "" },
+    }).select("imageUrl");
+
+    if (!product) {
+      return res
+        .status(404)
+        .json({ success: false, message: "No image found" });
+    }
+
+    res.status(200).json({
+      success: true,
+      imageUrl: product.imageUrl,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
 export {
   getProductsByLocation,
   getProductById,
@@ -233,4 +274,5 @@ export {
   updateProductStock,
   updateProductAvailable,
   deleteProduct,
+  getProductImageByName,
 };

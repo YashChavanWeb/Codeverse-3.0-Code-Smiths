@@ -6,14 +6,16 @@ export const Input = React.forwardRef(
       label,
       error,
       helperText,
-      variant = 'default', // default / flushed
+      variant = 'default',
       fullWidth = true,
       className = '',
+      select,
+      children, // needed for select options
       ...props
     },
     ref
   ) => {
-    const baseInputStyles = `
+    const baseStyles = `
       px-4 py-2 text-base font-normal transition-all duration-200
       placeholder-[var(--color-foreground-muted)] focus:outline-none
       disabled:bg-[var(--color-background-alt)] disabled:cursor-not-allowed disabled:text-[var(--color-foreground-muted)]
@@ -39,11 +41,23 @@ export const Input = React.forwardRef(
     return (
       <div className={`${fullWidth ? 'w-full' : ''}`}>
         {label && <label className={labelStyles}>{label}</label>}
-        <input
-          ref={ref}
-          className={`${baseInputStyles} ${variantStyles[variant]} ${className} ${fullWidth ? 'w-full' : ''}`}
-          {...props}
-        />
+
+        {select ? (
+          <select
+            ref={ref}
+            className={`${baseStyles} ${variantStyles[variant]} ${className} ${fullWidth ? 'w-full' : ''}`}
+            {...props}
+          >
+            {children}
+          </select>
+        ) : (
+          <input
+            ref={ref}
+            className={`${baseStyles} ${variantStyles[variant]} ${className} ${fullWidth ? 'w-full' : ''}`}
+            {...props}
+          />
+        )}
+
         {error && <p className={errorStyles}>{error}</p>}
         {helperText && !error && <p className={helperStyles}>{helperText}</p>}
       </div>

@@ -20,6 +20,8 @@ export const Button = React.forwardRef(
       flex items-center justify-center gap-2
       disabled:opacity-50 disabled:cursor-not-allowed
       shadow-sm hover:shadow-md
+      text-xs md:text-md
+      py-0.5 md:py-2
       ${isFullWidth ? 'w-full' : ''}
     `;
 

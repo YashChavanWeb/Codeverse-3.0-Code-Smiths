@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
-import { Pencil, Check, X, Loader2, Power, AlertCircle } from "lucide-react";
+import { Pencil, Check, X, Loader2, Power, AlertCircle, ChevronLeft, ChevronRight, ImageIcon } from "lucide-react";
 import { Card, CardHeader, CardContent, Table } from "../../components/ui";
 import axios from "axios";
 import { useAuth } from "../../context/AuthContext";
@@ -12,24 +12,30 @@ const VendorProducts = () => {
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
+  // 🔹 Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const limit = 10;
+
   const priceInputRef = useRef(null);
   const BASE_URL = `${import.meta.env.VITE_BACKEND_URL}/products`;
 
-  // 🔹 Axios Header Configuration
   const config = {
     headers: {
       Authorization: `Bearer ${token}`,
     },
   };
 
-  // 🔹 Fetch Products from API
-  const fetchProducts = async () => {
+  // 🔹 Updated Fetch with Page Params
+  const fetchProducts = async (page = currentPage) => {
     if (!token) return;
     try {
       setLoading(true);
-      const response = await axios.get(`${BASE_URL}/location`, config);
+      const response = await axios.get(`${BASE_URL}/location?page=${page}&limit=${limit}`, config);
       if (response.data.success) {
         setProducts(response.data.data);
+        setTotalPages(response.data.pages);
+        setCurrentPage(response.data.page);
       }
     } catch (error) {
       console.error("Error fetching products:", error);
@@ -39,10 +45,15 @@ const VendorProducts = () => {
   };
 
   useEffect(() => {
-    fetchProducts();
-  }, [token]);
+    fetchProducts(currentPage);
+  }, [token, currentPage]);
 
-  // 🔹 Auto-focus on price input when editing starts
+  const goToPage = (pageNumber) => {
+    if (pageNumber >= 1 && pageNumber <= totalPages) {
+      setCurrentPage(pageNumber);
+    }
+  };
+
   useEffect(() => {
     if (editingId && priceInputRef.current) {
       priceInputRef.current.focus();
@@ -63,24 +74,20 @@ const VendorProducts = () => {
     setEditData({ price: "", stock: "" });
   };
 
-  // 🔹 Toggle Manual Availability (PATCH /:id/available)
   const toggleAvailability = async (product) => {
     const newStatus = !product.available;
     try {
-      // Optimistic Update
       setProducts((prev) =>
         prev.map((p) => (p._id === product._id ? { ...p, available: newStatus } : p))
       );
-
       await axios.patch(`${BASE_URL}/${product._id}/available`, { available: newStatus }, config);
     } catch (error) {
       console.error("Failed to update availability", error);
       alert("Unauthorized or Session Expired");
-      fetchProducts(); // Rollback
+      fetchProducts();
     }
   };
 
-  // 🔹 Save Changes (Handles Parallel Queue Requests)
   const saveEdit = async (product) => {
     setIsSaving(true);
     const id = product._id;
@@ -90,17 +97,11 @@ const VendorProducts = () => {
 
     try {
       const requests = [];
-
-      // 1. Queue Price Update if changed
       if (newPrice !== product.price) {
         requests.push(axios.patch(`${BASE_URL}/${id}/price`, { price: newPrice }, config));
       }
-
-      // 2. Queue Stock Update if changed
       if (newStock !== currentStock) {
         requests.push(axios.patch(`${BASE_URL}/${id}/stock`, { stock: newStock }, config));
-
-        // 3. Auto-disable availability if stock hit 0
         if (newStock === 0 && product.available) {
           requests.push(axios.patch(`${BASE_URL}/${id}/available`, { available: false }, config));
         }
@@ -108,8 +109,6 @@ const VendorProducts = () => {
 
       if (requests.length > 0) {
         await Promise.all(requests);
-
-        // Optimistic UI Update (reflecting changes immediately)
         setProducts((prev) =>
           prev.map((p) =>
             p._id === id
@@ -127,9 +126,7 @@ const VendorProducts = () => {
       setEditingId(null);
     } catch (error) {
       console.error("Failed to save changes:", error);
-      const msg = error.response?.status === 401 ? "Unauthorized. Please login again." : "Failed to queue updates.";
-      alert(msg);
-      fetchProducts(); // Rollback to server state
+      fetchProducts();
     } finally {
       setIsSaving(false);
     }
@@ -140,11 +137,33 @@ const VendorProducts = () => {
       header: "Product",
       accessor: "name",
       cell: (row) => (
-        <div className="flex flex-col">
-          <span className="font-semibold text-slate-700">{row.name}</span>
-          <span className="text-[10px] uppercase text-slate-400 tracking-wider font-bold">
-            {row.category}
-          </span>
+        <div className="flex items-center gap-4">
+          {/* 🔹 Image Container */}
+          <div className="relative h-12 w-12 rounded-xl overflow-hidden bg-slate-100 border border-slate-200 flex-shrink-0">
+            {row.imageUrl ? (
+              <img
+                src={row.imageUrl}
+                alt={row.name}
+                className="h-full w-full object-cover"
+                onError={(e) => {
+                  e.target.onerror = null;
+                  e.target.src = "https://placehold.co/100x100?text=No+Image";
+                }}
+              />
+            ) : (
+              <div className="h-full w-full flex items-center justify-center">
+                <ImageIcon className="w-5 h-5 text-slate-300" />
+              </div>
+            )}
+          </div>
+
+          {/* 🔹 Text Details */}
+          <div className="flex flex-col">
+            <span className="font-bold text-slate-700 leading-tight">{row.name}</span>
+            <span className="text-[10px] uppercase text-slate-400 tracking-wider font-extrabold mt-0.5">
+              {row.category}
+            </span>
+          </div>
         </div>
       ),
     },
@@ -246,7 +265,7 @@ const VendorProducts = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50/50 px-4 py-10 font-sans">
+    <div className="min-h-screen bg-slate-50/50 px-4 py-10 font-sans text-slate-900">
       <div className="max-w-6xl mx-auto">
         <Card className="border-none shadow-xl shadow-slate-200/50 overflow-hidden bg-white">
           <CardHeader className="border-b border-slate-50 p-6 bg-white">
@@ -266,7 +285,7 @@ const VendorProducts = () => {
                   </div>
                 )}
                 <button
-                  onClick={fetchProducts}
+                  onClick={() => fetchProducts(currentPage)}
                   className="p-2 hover:bg-slate-50 rounded-full transition-all active:scale-95 border border-slate-100"
                 >
                   <Loader2 className={`w-4 h-4 text-slate-500 ${loading ? "animate-spin" : ""}`} />
@@ -291,9 +310,53 @@ const VendorProducts = () => {
                 <p className="text-slate-400">No products found for this location.</p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <Table columns={columns} data={products} />
-              </div>
+              <>
+                <div className="overflow-x-auto">
+                  <Table columns={columns} data={products} />
+                </div>
+
+                <div className="px-6 py-4 border-t border-slate-50 flex items-center justify-between bg-white">
+                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                    Page {currentPage} of {totalPages}
+                  </span>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      disabled={currentPage === 1}
+                      onClick={() => goToPage(currentPage - 1)}
+                      className="p-1.5 rounded-md border border-slate-100 disabled:opacity-30 hover:bg-slate-50 transition-colors"
+                    >
+                      <ChevronLeft className="w-4 h-4 text-slate-600" />
+                    </button>
+
+                    <div className="flex items-center gap-1">
+                      {[...Array(totalPages)].map((_, index) => {
+                        const pageNum = index + 1;
+                        return (
+                          <button
+                            key={pageNum}
+                            onClick={() => goToPage(pageNum)}
+                            className={`px-3 py-1 rounded-md text-xs font-bold transition-all ${currentPage === pageNum
+                              ? "bg-blue-500 text-white shadow-md shadow-blue-200"
+                              : "text-slate-400 hover:bg-slate-50"
+                              }`}
+                          >
+                            {pageNum}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    <button
+                      disabled={currentPage === totalPages}
+                      onClick={() => goToPage(currentPage + 1)}
+                      className="p-1.5 rounded-md border border-slate-100 disabled:opacity-30 hover:bg-slate-50 transition-colors"
+                    >
+                      <ChevronRight className="w-4 h-4 text-slate-600" />
+                    </button>
+                  </div>
+                </div>
+              </>
             )}
           </CardContent>
         </Card>
