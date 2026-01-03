@@ -16,8 +16,8 @@ import RoleSelection from "./pages/auth/RoleSelection";
 // General Pages
 import Profile from "./components/Profile";
 
-// User Pages
-import BasketEstimator from "./pages/BasketEstimator";
+//User Pages
+import BasketEstimator from "./pages/user/BasketEstimator";
 
 // Vendor Pages
 import VendorDashboard from "./pages/vendor/VendorDashboard";
@@ -28,6 +28,9 @@ import VendorVoiceAdd from "./pages/vendor/VendorVoiceAdd";
 import VendorProducts from "./pages/vendor/VendorProducts";
 import LiveMap from "./components/LiveMap";
 import Dashboard from "./pages/user/DashboardPage";
+import LocationLiveMap from "./pages/user/LocationLiveMap";
+
+
 
 const AppContent = () => {
   const [drawerOpen, setDrawerOpen] = useState(true);
@@ -101,6 +104,14 @@ const AppContent = () => {
             element={
               <ProtectedRoute roles={["vendor"]}>
                 <VendorDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/location-vendors"
+            element={
+              <ProtectedRoute roles={["user"]}>
+                <LocationLiveMap />
               </ProtectedRoute>
             }
           />
