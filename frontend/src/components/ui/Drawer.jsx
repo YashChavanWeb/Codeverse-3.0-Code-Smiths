@@ -71,12 +71,12 @@ const Drawer = ({ open, onToggle, role: propRole }) => {
     <>
       {/* Desktop Sidebar */}
       <aside
-        className={`hidden md:flex fixed top-0 left-0 h-full bg-white border-r shadow-xl flex-col transition-all duration-300 z-50
+        className={`hidden md:flex fixed top-0 left-0 h-full bg-green-500/20 border-r shadow-xl flex-col transition-all duration-300 z-50
           ${open ? "w-64" : "w-20"}
         `}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-5 border-b">
+        <div className="flex items-center justify-between p-5">
           {open && <h1 className="font-bold text-lg text-green-600 truncate">SmartVegis</h1>}
           <button
             onClick={() => onToggle(!open)}
@@ -94,14 +94,14 @@ const Drawer = ({ open, onToggle, role: propRole }) => {
               <button
                 key={item.label}
                 onClick={() => navigate(item.path)}
-                className={`flex items-center gap-3 w-full p-3 rounded-xl transition-all group
+                className={`flex items-center gap-3 w-full p-3 rounded-xl transition-all ease-in-out group
                   ${isActive
-                    ? "bg-green-100 text-green-700 px-3"
-                    : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                    ? "bg-green-500/30 text-green-800 px-3"
+                    : "text-gray-500 hover:bg-green-50 hover:text-gray-900"
                   }
                 `}
               >
-                <span className={`${isActive ? "text-green-600" : "text-gray-400 group-hover:text-gray-600"}`}>
+                <span className={`${isActive ? "text-green-800" : "text-gray-500 group-hover:text-gray-600"}`}>
                   {item.icon}
                 </span>
                 {open && <span className="font-medium whitespace-nowrap text-sm">{item.label}</span>}

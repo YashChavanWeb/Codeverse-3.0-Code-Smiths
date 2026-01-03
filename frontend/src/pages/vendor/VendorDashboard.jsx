@@ -3,11 +3,12 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
 // UI Components
-import { Button } from "../../components/ui";
+import { Button, CardHeader } from "../../components/ui";
 import Leaderboard from "../../components/Leaderboard";
 
 // Context
 import { useAuth } from "../../context/AuthContext";
+import { Card } from "../../components/ui";
 
 const VendorDashboard = () => {
   const navigate = useNavigate();
@@ -83,10 +84,10 @@ const VendorDashboard = () => {
       </section>
 
       {/* Leaderboard Section */}
-      <section className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden w-full">
-        <div className="p-4 border-b bg-gray-50/50">
+      <Card className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden w-full">
+        <CardHeader className="bg-linear-to-br from-green-50/80 via-green-600/20 to green-50/80 border-2 rounded-t-md">
           <h3 className="font-semibold text-gray-700">Your Inventory Performance</h3>
-        </div>
+        </CardHeader>
         <div className="w-full">
           <Leaderboard
             title="My Products"
@@ -95,7 +96,7 @@ const VendorDashboard = () => {
             pageSize={5}
           />
         </div>
-      </section>
+      </Card>
     </div>
   );
 };

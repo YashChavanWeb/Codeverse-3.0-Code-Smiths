@@ -5,7 +5,7 @@ import logo from "../assets/Images/logo.png"; // adjust path if needed
 const LandingNavbar = () => {
   return (
     <nav className="w-full px-6 py-4 flex items-center justify-between bg-white border-b">
-
+      
       {/* Logo + App Name */}
       <Link to="/" className="flex items-center gap-3">
         <img

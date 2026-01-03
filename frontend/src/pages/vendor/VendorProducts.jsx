@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
-import { Pencil, Check, X, Loader2, Power, AlertCircle, ChevronLeft, ChevronRight, ImageIcon } from "lucide-react";
-import { Card, CardHeader, CardContent, Table } from "../../components/ui";
+import { Pencil, Check, X, Loader2, Power, AlertCircle, ChevronLeft, ChevronRight, ImageIcon, Ghost } from "lucide-react";
+import { Card, CardHeader, CardContent, Table, Button } from "../../components/ui";
 import axios from "axios";
 import { useAuth } from "../../context/AuthContext";
 
@@ -265,10 +265,10 @@ const VendorProducts = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50/50 px-4 py-10 font-sans text-slate-900">
+    <div className="min-h-screen bg-slate-50/50 px-4 py-10  text-slate-900">
       <div className="max-w-6xl mx-auto">
-        <Card className="border-none shadow-xl shadow-slate-200/50 overflow-hidden bg-white">
-          <CardHeader className="border-b border-slate-50 p-6 bg-white">
+        <Card className="border-none shadow-xl shadow-slate-200/50 overflow-hidden">
+          <CardHeader className="border-b border-2 border-slate-300 p-6 bg-linear-to-br from-green-50/80 via-green-600/20 to green-50/80 rounded-t-md">
             <div className="flex justify-between items-center">
               <div>
                 <h2 className="text-2xl font-bold text-slate-800 tracking-tight">Inventory Manager</h2>
@@ -284,12 +284,13 @@ const VendorProducts = () => {
                     </span>
                   </div>
                 )}
-                <button
+                <Button
+                variant='ghost'
                   onClick={() => fetchProducts(currentPage)}
                   className="p-2 hover:bg-slate-50 rounded-full transition-all active:scale-95 border border-slate-100"
                 >
-                  <Loader2 className={`w-4 h-4 text-slate-500 ${loading ? "animate-spin" : ""}`} />
-                </button>
+                  <Loader2 className={`w-4 h-4 text-green-900 ${loading ? "animate-spin" : ""}`} />
+                </Button>
               </div>
             </div>
           </CardHeader>
@@ -333,16 +334,16 @@ const VendorProducts = () => {
                       {[...Array(totalPages)].map((_, index) => {
                         const pageNum = index + 1;
                         return (
-                          <button
+                          <Button
                             key={pageNum}
                             onClick={() => goToPage(pageNum)}
                             className={`px-3 py-1 rounded-md text-xs font-bold transition-all ${currentPage === pageNum
-                              ? "bg-blue-500 text-white shadow-md shadow-blue-200"
-                              : "text-slate-400 hover:bg-slate-50"
-                              }`}
+                              ? "bg-green-700 shadow-md shadow-blue-200"
+                              : "bg-green-200 text-slate-400 hover:bg-slate-50"
+                              } `}
                           >
                             {pageNum}
-                          </button>
+                          </Button>
                         );
                       })}
                     </div>
