@@ -16,6 +16,9 @@ import RoleSelection from "./pages/auth/RoleSelection";
 // General Pages
 import Profile from "./components/Profile";
 
+//User Pages
+import BasketEstimator from "./pages/BasketEstimator";
+
 // Vendor Pages
 import VendorDashboard from "./pages/vendor/VendorDashboard";
 import VendorAddOptions from "./pages/vendor/VendorAddOptions";
@@ -25,6 +28,8 @@ import VendorVoiceAdd from "./pages/vendor/VendorVoiceAdd";
 import VendorProducts from "./pages/vendor/VendorProducts";
 import LiveMap from "./components/LiveMap";
 import Dashboard from "./pages/user/DashboardPage";
+
+
 
 const AppContent = () => {
   const [drawerOpen, setDrawerOpen] = useState(true);
@@ -56,6 +61,17 @@ const AppContent = () => {
             element={
               <ProtectedRoute roles={["user"]}>
                 <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+
+        
+
+          <Route
+            path="/basket-estimator"
+            element={
+              <ProtectedRoute roles={["user"]}>
+                <BasketEstimator />
               </ProtectedRoute>
             }
           />
