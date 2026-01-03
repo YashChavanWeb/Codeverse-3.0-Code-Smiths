@@ -5,6 +5,7 @@ import authRoutes from "./src/auth/authRoutes.js";
 import productRoutes from "./src/products/productRoutes.js";
 import basketRoutes from "./src/basket/basketRoutes.js";
 import cors from "cors";
+import startProductWorker from "./src/queue/productWorker.js";
 
 // Function to log messages
 const logRequest = (message) => {
@@ -36,6 +37,9 @@ app.use((req, res, next) => {
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/products", productRoutes);
 app.use("/api/v1/basket", basketRoutes);
+
+// Start product worker
+startProductWorker();
 
 app.get("/", (req, res) => {
   res.json({ message: `Server is running on port ${PORT}` });
