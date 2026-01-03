@@ -1,5 +1,7 @@
 import React, { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
+import { useAuth } from "../../context/AuthContext"; // Import your auth hook
 import {
   Card,
   CardHeader,
@@ -9,6 +11,7 @@ import {
 
 const VendorVoiceAdd = () => {
   const navigate = useNavigate();
+  const { token } = useAuth(); // Get token for the header
   const recognitionRef = useRef(null);
 
   const [language, setLanguage] = useState("en-IN");
@@ -17,6 +20,7 @@ const VendorVoiceAdd = () => {
   const [transcript, setTranscript] = useState("");
   const [parsedData, setParsedData] = useState(null);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const SpeechRecognition =
     window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -46,6 +50,7 @@ const VendorVoiceAdd = () => {
 
     recognition.onerror = () => {
       setError("Error while capturing voice");
+      setListening(false);
     };
 
     recognitionRef.current = recognition;
@@ -73,28 +78,59 @@ const VendorVoiceAdd = () => {
 
     const text = transcript.toLowerCase();
 
-    // English keywords
-    const nameMatch = text.match(/^[a-zA-Z]+/);
-    const priceMatch = text.match(/price\s(\d+)/);
-    const quantityMatch = text.match(/quantity\s(\d+)/);
+    // Basic regex to pull data from phrases like "Tomato price 40 quantity 10"
+    const nameMatch = text.match(/^[a-z]+/i);
+    const priceMatch = text.match(/(?:price|rate)\s*(\d+)/i);
+    const quantityMatch = text.match(/(?:quantity|stock|qty)\s*(\d+)/i);
+
+    const name = nameMatch ? nameMatch[0] : "";
 
     setParsedData({
-      name: nameMatch ? nameMatch[0] : "",
+      name: name.charAt(0).toUpperCase() + name.slice(1),
       price: priceMatch ? priceMatch[1] : "",
       quantity: quantityMatch ? quantityMatch[1] : "",
+      category: "Vegetable", // Default fallback
+      unit: "kg",            // Default fallback
     });
   };
 
-  const handleSubmit = () => {
-    if (!parsedData) {
-      setError("Please record and confirm item details first");
+  const handleSubmit = async () => {
+    if (!parsedData || !parsedData.name || !parsedData.price) {
+      setError("Please ensure name and price were captured clearly");
       return;
     }
 
-    console.log("Final item added:", parsedData);
-    // TODO: API call here
+    setLoading(true);
+    try {
+      // Mapping parsed voice data to backend schema
+      const payload = {
+        name: parsedData.name,
+        category: parsedData.category,
+        price: Number(parsedData.price),
+        unit: parsedData.unit,
+        stock: Number(parsedData.quantity) || 0,
+      };
 
-    navigate("/vendor/add");
+      const response = await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL}/products`,
+        payload,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.status === 201 || response.data) {
+        alert("Product added successfully!");
+        navigate("/vendor/add");
+      }
+    } catch (err) {
+      console.error("Voice submit error:", err);
+      setError(err.response?.data?.message || "Failed to add product");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -128,27 +164,27 @@ const VendorVoiceAdd = () => {
 
             {/* Controls */}
             <div className="flex gap-3 justify-center">
-              <Button onClick={startListening} disabled={listening}>
+              <Button onClick={startListening} disabled={listening || loading}>
                 ▶ Start
               </Button>
               <Button
                 variant="secondary"
                 onClick={pauseListening}
-                disabled={!listening}
+                disabled={!listening || loading}
               >
-                ⏸ Pause
+                | | Pause
               </Button>
               <Button
                 variant="secondary"
                 onClick={stopListening}
-                disabled={!listening && !paused}
+                disabled={(!listening && !paused) || loading}
               >
-                ⏹ Stop
+                ■ Stop
               </Button>
             </div>
 
             {/* Transcript */}
-            <div className="border border-border rounded-md p-4min-h-[100px] bg-white">
+            <div className="border border-border rounded-md p-4 min-h-[100px] bg-white">
               {transcript ? (
                 <p className="text-sm">{transcript}</p>
               ) : (
@@ -187,7 +223,7 @@ const VendorVoiceAdd = () => {
             )}
 
             {error && (
-              <p className="text-sm text-red-600">{error}</p>
+              <p className="text-sm text-red-600 font-medium">{error}</p>
             )}
 
             {/* Actions */}
@@ -196,15 +232,16 @@ const VendorVoiceAdd = () => {
                 variant="secondary"
                 className="w-full"
                 onClick={() => navigate("/vendor/add")}
+                disabled={loading}
               >
                 Cancel
               </Button>
               <Button
                 className="w-full"
                 onClick={handleSubmit}
-                disabled={!parsedData}
+                disabled={!parsedData || loading}
               >
-                Add Item
+                {loading ? "Adding..." : "Add Item"}
               </Button>
             </div>
 
