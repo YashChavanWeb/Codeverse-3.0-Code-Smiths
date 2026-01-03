@@ -89,13 +89,16 @@ const getProductById = async (req, res) => {
 
 /* ---------- CREATE ---------- */
 const createProduct = async (req, res) => {
-  const { name, category, price, unit, stock } = req.body;
+  const { name, category, price, unit, stock, imageUrl } = req.body;
+  const finalImageUrl =
+    imageUrl || "https://via.placeholder.com/150?text=No+Image";
 
   const product = await Product.create({
     name,
     category,
     price,
     unit,
+    imageUrl: finalImageUrl,
     stock: { current: stock, before: 0 },
     vendor: req.user._id,
   });
@@ -188,6 +191,33 @@ const deleteProduct = async (req, res) => {
   }
 };
 
+const getProductImageByName = async (req, res) => {
+  const { name } = req.query;
+
+  try {
+    if (!name) return res.status(400).json({ message: "Name is required" });
+
+    // Find one product with this name that HAS an imageUrl
+    const product = await Product.findOne({
+      name: new RegExp(`^${name}$`, "i"), // Exact match, case-insensitive
+      imageUrl: { $exists: true, $ne: "" },
+    }).select("imageUrl");
+
+    if (!product) {
+      return res
+        .status(404)
+        .json({ success: false, message: "No image found" });
+    }
+
+    res.status(200).json({
+      success: true,
+      imageUrl: product.imageUrl,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
 export {
   getProductsByLocation,
   getProductById,
@@ -197,4 +227,5 @@ export {
   updateProductStock,
   updateProductAvailable,
   deleteProduct,
+  getProductImageByName,
 };

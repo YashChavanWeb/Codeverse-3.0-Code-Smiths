@@ -2,6 +2,8 @@
 
 ## Project Setup
 
+node src/scripts/seedProducts.js
+
 ### Frontend
 
 1. Install dependencies:
@@ -46,12 +48,13 @@
 
 3. Activate the virtual environment:
 
-   * On Windows:
+   - On Windows:
 
      ```bash
      .venv\Scripts\activate
      ```
-   * On macOS/Linux:
+
+   - On macOS/Linux:
 
      ```bash
      source .venv/bin/activate
@@ -68,4 +71,3 @@
    ```bash
    uvicorn app.main:app --reload
    ```
-
