@@ -6,3 +6,4 @@ export { default as Drawer } from './Drawer';
 export { Divider } from './Divider';
 export { ErrorBanner } from './ErrorBanner';
 export { Card, CardHeader, CardContent } from './Card';
+export { default as Table } from './Table';
