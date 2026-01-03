@@ -2,15 +2,15 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 
 // UI Components
-import { Button } from "./ui";
-import Leaderboard from "./Leaderboard";
+import { Button } from "../../components/ui";
+import Leaderboard from "../../components/Leaderboard";
 
-const Home = () => {
+const Dashboard = () => {
   const navigate = useNavigate();
   const username = localStorage.getItem("username") || "Guest";
 
   return (
-    <div className="p-8 max-w-7xl mx-auto w-full space-y-8">
+    <div className="p-4 md:p-8 max-w-full mx-auto w-full space-y-8 mb-20">
       {/* Welcome Section */}
       <section className="flex flex-col md:flex-row items-center justify-between gap-6">
         <div className="flex items-center gap-4">
@@ -18,12 +18,12 @@ const Home = () => {
             {username.charAt(0).toUpperCase()}
           </div>
           <div>
-            <h2 className="text-2xl font-bold text-gray-800">Welcome back, {username}!</h2>
-            <p className="text-gray-500">Here’s what’s happening today.</p>
+            <h2 className="text-lg sm:text-2xl font-bold text-gray-800">Welcome back, {username}!</h2>
+            <p className="text-sm sm:text-md text-gray-500">Here’s what’s happening today.</p>
           </div>
         </div>
 
-        <div className="flex gap-3">
+        <div className="flex gap-0.5 sm:gap-3 scale-80 sm:scale-0">
           <Button onClick={() => navigate("/profile")} variant="outline">
             Edit Profile
           </Button>
@@ -31,26 +31,16 @@ const Home = () => {
       </section>
 
       {/* Leaderboard Section */}
-      <section className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      <section className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden w-full">
         <div className="p-4 border-b bg-gray-50/50">
           <h3 className="font-semibold text-gray-700">Top Performers</h3>
         </div>
-        <Leaderboard />
+        <div className="w-full overflow-x-auto">
+          <Leaderboard />
+        </div>
       </section>
     </div>
   );
 };
 
-// Helper Sub-component
-const NavItem = ({ icon, label, open, onClick }) => (
-  <button
-    onClick={onClick}
-    className="flex items-center gap-3 w-full p-3 rounded-lg hover:bg-green-50 text-gray-700 transition-all group"
-    title={!open ? label : ""}
-  >
-    <span className="text-gray-500 group-hover:text-green-600">{icon}</span>
-    {open && <span className="font-medium">{label}</span>}
-  </button>
-);
-
-export default Home;
+export default Dashboard;

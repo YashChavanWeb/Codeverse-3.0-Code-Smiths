@@ -1,4 +1,4 @@
-import { getNextJob } from "./Productqueue.js";
+import { getNextJob } from "./productQueue.js";
 import { Product } from "../products/productModel.js";
 import { Basket } from "../basket/basketModel.js";
 import productEvents from "../utils/events.js";

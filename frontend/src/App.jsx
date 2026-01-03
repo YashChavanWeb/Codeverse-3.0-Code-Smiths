@@ -14,7 +14,6 @@ import Signin from "./pages/auth/Signin";
 import RoleSelection from "./pages/auth/RoleSelection";
 
 // General Pages
-import Home from "./components/Home";
 import Profile from "./components/Profile";
 
 // Vendor Pages
@@ -25,6 +24,7 @@ import VendorCsvUpload from "./pages/vendor/VendorCsvUpload";
 import VendorVoiceAdd from "./pages/vendor/VendorVoiceAdd";
 import VendorProducts from "./pages/vendor/VendorProducts";
 import LiveMap from "./components/LiveMap";
+import Dashboard from "./pages/user/DashboardPage";
 
 const AppContent = () => {
   const [drawerOpen, setDrawerOpen] = useState(true);
@@ -55,7 +55,7 @@ const AppContent = () => {
             path="/"
             element={
               <ProtectedRoute roles={["user"]}>
-                <Home />
+                <Dashboard />
               </ProtectedRoute>
             }
           />
