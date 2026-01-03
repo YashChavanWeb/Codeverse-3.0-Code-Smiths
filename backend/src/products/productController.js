@@ -120,62 +120,98 @@ const verifyOwnershipAndStore = async (productId, userId) => {
   return { product };
 };
 
-/* ---------- TITLE ---------- */
 const updateProductTitle = async (req, res) => {
   const check = await verifyOwnershipAndStore(req.params.id, req.user._id);
   if (check.error)
     return res.status(check.status).json({ message: check.error });
 
-  await addToQueue("TITLE_UPDATE", {
-    productId: check.product._id,
-    name: req.body.name,
+  const { name } = req.body;
+
+  // Emit immediate SSE
+  productEvents.emit("productUpdate", {
+    type: "TITLE_UPDATE",
+    product: { _id: check.product._id, name },
   });
 
-  res.json({ success: true, message: "Title update queued" });
+  // Queue DB write
+  await addToQueue("TITLE_UPDATE", {
+    productId: check.product._id,
+    name,
+  });
+
+  res.json({ success: true, message: "Title update queued and frontend notified" });
 };
 
-/* ---------- PRICE ---------- */
+
 const updateProductPrice = async (req, res) => {
   const check = await verifyOwnershipAndStore(req.params.id, req.user._id);
   if (check.error)
     return res.status(check.status).json({ message: check.error });
 
-  await addToQueue("PRICE_UPDATE", {
-    productId: check.product._id,
-    newPrice: req.body.price,
+  const { price } = req.body;
+
+  // Emit immediate SSE (optimistic update)
+  productEvents.emit("productUpdate", {
+    type: "PRICE_UPDATE",
+    product: { _id: check.product._id, price },
   });
 
-  res.json({ success: true, message: "Price update queued" });
+  // Queue DB write
+  await addToQueue("PRICE_UPDATE", {
+    productId: check.product._id,
+    newPrice: price,
+  });
+
+  res.json({ success: true, message: "Price update queued and frontend notified" });
 };
 
-/* ---------- STOCK ---------- */
+
 const updateProductStock = async (req, res) => {
   const check = await verifyOwnershipAndStore(req.params.id, req.user._id);
   if (check.error)
     return res.status(check.status).json({ message: check.error });
 
-  await addToQueue("STOCK_UPDATE", {
-    productId: check.product._id,
-    newStock: req.body.stock,
-    location: req.user.location, // Crucial for demand analytics
+  const { stock } = req.body;
+
+  // Emit immediate SSE
+  productEvents.emit("productUpdate", {
+    type: "STOCK_UPDATE",
+    product: { _id: check.product._id, stock: { current: stock } },
   });
 
-  res.json({ success: true, message: "Stock update queued" });
+  // Queue DB write
+  await addToQueue("STOCK_UPDATE", {
+    productId: check.product._id,
+    newStock: stock,
+    location: req.user.location,
+  });
+
+  res.json({ success: true, message: "Stock update queued and frontend notified" });
 };
 
-/* ---------- AVAILABILITY ---------- */
+
 const updateProductAvailable = async (req, res) => {
   const check = await verifyOwnershipAndStore(req.params.id, req.user._id);
   if (check.error)
     return res.status(check.status).json({ message: check.error });
 
-  await addToQueue("AVAILABILITY_UPDATE", {
-    productId: check.product._id,
-    available: req.body.available,
+  const { available } = req.body;
+
+  // Emit immediate SSE
+  productEvents.emit("productUpdate", {
+    type: "AVAILABILITY_UPDATE",
+    product: { _id: check.product._id, available },
   });
 
-  res.json({ success: true, message: "Availability update queued" });
+  // Queue DB write
+  await addToQueue("AVAILABILITY_UPDATE", {
+    productId: check.product._id,
+    available,
+  });
+
+  res.json({ success: true, message: "Availability update queued and frontend notified" });
 };
+
 
 /* ---------- DELETE ---------- */
 const deleteProduct = async (req, res) => {
