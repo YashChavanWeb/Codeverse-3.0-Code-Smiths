@@ -55,9 +55,7 @@ const Drawer = ({ open, onToggle, role: propRole }) => {
   const menuConfig = {
     user: [
       { label: "Dashboard", icon: <HomeIcon size={20} />, path: "/" },
-      { label: "Leaderboard", icon: <Trophy size={20} />, path: "/leaderboard" },
       { label: "Location Vendors", icon: <MapPin size={20} />, path: "/location-vendors" },
-      { label: "Product Comparison", icon: <ShoppingCart size={20} />, path: "/product-comparison" },
       { label: "Basket Estimator", icon: <DollarSign size={20} />, path: "/basket-estimator" },
     ],
     vendor: [
