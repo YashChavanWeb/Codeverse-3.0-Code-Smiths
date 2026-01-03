@@ -7,7 +7,7 @@ const RoleSelection = () => {
 
   const selectRole = (role) => {
     localStorage.setItem("selectedRole", role);
-    navigate("/signup"); // go to signup with role
+    navigate("/signup");
   };
 
   return (

@@ -22,11 +22,19 @@ const userSchema = new mongoose.Schema(
       default: "user",
     },
     location: {
-      type: String,
-      required: function () {
-        return this.role === "vendor";
+      address: {
+        type: String,
+        required: function () {
+          return this.role === "vendor";
+        },
+        trim: true,
       },
-      trim: true,
+      coordinates: {
+        type: String,
+        required: function () {
+          return this.role === "vendor";
+        },
+      },
     },
     storeName: {
       type: String,

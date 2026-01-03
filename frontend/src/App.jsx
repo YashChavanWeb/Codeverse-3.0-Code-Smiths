@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 // Context & Routes
 import { AuthProvider, useAuth } from "./context/AuthContext";
@@ -30,44 +30,44 @@ import LiveMap from "./components/LiveMap";
 import Dashboard from "./pages/user/DashboardPage";
 import LocationLiveMap from "./pages/user/LocationLiveMap";
 
-
+// Landing Page
+import LandingPage from "./pages/LandingPage";
 
 const AppContent = () => {
   const [drawerOpen, setDrawerOpen] = useState(true);
   const { isAuthenticated } = useAuth();
-  const location = useLocation();
-
-  // Public routes where we don't want the drawer or the sidebar margin
-  const publicRoutes = ["/signin", "/signup", "/select-role"];
-  const isPublicRoute = publicRoutes.includes(location.pathname);
-  const showDrawer = isAuthenticated && !isPublicRoute;
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      {showDrawer && <Drawer open={drawerOpen} onToggle={setDrawerOpen} />}
+      {isAuthenticated && <Drawer open={drawerOpen} onToggle={setDrawerOpen} />}
 
       <main
-        className={`flex-1 flex flex-col transition-all duration-300 ${showDrawer ? (drawerOpen ? "md:ml-64" : "md:ml-20") : ""
-          }`}
+        className={`flex-1 flex flex-col transition-all duration-300 ${
+          isAuthenticated ? (drawerOpen ? "md:ml-64" : "md:ml-20") : ""
+        }`}
       >
         <Routes>
           {/* Public Routes */}
+          <Route path="/" element={isAuthenticated ? <Leaderboard /> : <LandingPage />} />
           <Route path="/select-role" element={<RoleSelection />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/signin" element={<Signin />} />
 
-          {/* User Protected Routes */}
+          {/* Root Route with Logic for Unauthenticated Users */}
           <Route
-            path="/"
+            path="/dashboard"
             element={
-              <ProtectedRoute roles={["user"]}>
-                <Dashboard />
-              </ProtectedRoute>
+              isAuthenticated ? (
+                <ProtectedRoute roles={["user"]}>
+                  <Dashboard />
+                </ProtectedRoute>
+              ) : (
+                <Navigate to="/select-role" replace />
+              )
             }
           />
 
-        
-
+          {/* User Protected Routes */}
           <Route
             path="/basket-estimator"
             element={
@@ -76,13 +76,21 @@ const AppContent = () => {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/location-vendors"
+            element={
+              <ProtectedRoute roles={["user"]}>
+                <LiveMap />
+              </ProtectedRoute>
+            }
+          />
 
           {/* Common Protected Routes */}
           <Route
-            path="/profile"
+            path="/leaderboard"
             element={
-              <ProtectedRoute roles={["user", "vendor"]}>
-                <Profile />
+              <ProtectedRoute roles={["user"]}>
+                <Leaderboard />
               </ProtectedRoute>
             }
           />
@@ -145,22 +153,27 @@ const AppContent = () => {
             }
           />
 
-          {/* Fallback */}
-          <Route path="*" element={<Navigate to="/signin" replace />} />
+          {/* Common Protected Routes */}
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute roles={["user", "vendor"]}>
+                <Profile />
+              </ProtectedRoute>
+            }
+          />
         </Routes>
       </main>
     </div>
   );
 };
 
-const App = () => {
-  return (
-    <AuthProvider>
-      <BrowserRouter>
-        <AppContent />
-      </BrowserRouter>
-    </AuthProvider>
-  );
-};
+const App = () => (
+  <AuthProvider>
+    <BrowserRouter>
+      <AppContent />
+    </BrowserRouter>
+  </AuthProvider>
+);
 
 export default App;
