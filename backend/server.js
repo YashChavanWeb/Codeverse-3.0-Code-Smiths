@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import connectDB from "./src/db/db.js";
 import authRoutes from "./src/auth/authRoutes.js";
 import productRoutes from "./src/products/productRoutes.js";
+import basketRoutes from "./src/basket/basketRoutes.js";
 import cors from "cors";
 
 // Function to log messages
@@ -34,6 +35,7 @@ app.use((req, res, next) => {
 // Routes
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/products", productRoutes);
+app.use("/api/v1/basket", basketRoutes);
 
 app.get("/", (req, res) => {
   res.json({ message: `Server is running on port ${PORT}` });

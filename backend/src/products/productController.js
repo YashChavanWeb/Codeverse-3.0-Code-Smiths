@@ -1,5 +1,6 @@
 import { Product } from "./productModel.js";
 import { User } from "../auth/authModel.js";
+import { Basket } from "../basket/basketModel.js";
 import productEvents from "../utils/events.js";
 
 // GET /location
@@ -68,13 +69,11 @@ const getProductsByLocation = async (req, res) => {
       data: products,
     });
   } catch (error) {
-    res
-      .status(500)
-      .json({
-        success: false,
-        message: "Error fetching products",
-        error: error.message,
-      });
+    res.status(500).json({
+      success: false,
+      message: "Error fetching products",
+      error: error.message,
+    });
   }
 };
 
@@ -168,26 +167,47 @@ const updateProductPrice = async (req, res) => {
   }
 };
 
-// PATCH /:id/stock
+// Inside productController.js -> updateProductStock
+
 const updateProductStock = async (req, res) => {
   try {
     const check = await verifyOwnershipAndStore(req.params.id, req.user._id);
     if (check.error)
       return res.status(check.status).json({ message: check.error });
 
+    const oldStock = check.product.stock.current;
     const newStockValue = req.body.stock;
 
-    // Core Logic: Shift current to before, then update current
-    check.product.stock.before = check.product.stock.current;
+    check.product.stock.before = oldStock;
     check.product.stock.current = newStockValue;
-
     await check.product.save();
 
+    // Calculate Demand Impact
+    // If stock decreases (delta is negative), demandIndex should rise
+    const stockDelta = newStockValue - oldStock;
+
+    // Update Basket Analytics
+    const basket = await Basket.findOneAndUpdate(
+      { product: check.product._id, location: req.user.location },
+      { $set: { lastStockDelta: stockDelta } },
+      { upsert: true, new: true }
+    );
+
+    // Dynamic Demand Index Calculation: (DemandCount / CurrentStock) * 100
+    // Higher index = High urgency/low supply
+    if (basket && newStockValue > 0) {
+      basket.demandIndex = Math.round(
+        (basket.demandCount / newStockValue) * 100
+      );
+      await basket.save();
+    }
+
+    // Emit SSE with new analytics
     productEvents.emit("productUpdate", {
       type: "STOCK_UPDATE",
       productId: check.product._id,
-      newStock: check.product.stock.current,
-      previousStock: check.product.stock.before,
+      newStock: newStockValue,
+      demandIndex: basket ? basket.demandIndex : 0,
     });
 
     res.status(200).json(check.product);
