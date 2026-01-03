@@ -1,50 +1,86 @@
-import React from 'react';
+// Home.jsx
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, CardContent, Button } from './ui';
+import Drawer from './ui/Drawer';
+import Leaderboard from './Leaderboard';
+import { Home as HomeIcon, User, LogOut, Menu } from 'lucide-react';
 
-function Home() {
-    const navigate = useNavigate();
-    const username = localStorage.getItem('username') || 'Guest';
+const Home = () => {
+  const navigate = useNavigate();
+  const [drawerOpen, setDrawerOpen] = useState(true);
 
-    const handleLogout = () => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('username');
-        navigate('/signin');
-    };
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('username');
+    navigate('/signin');
+  };
 
-    return (
-        <div className="min-h-screen flex items-center justify-center bg-background-alt p-6">
-            <Card className="w-full max-w-md text-center">
-                <CardContent className="py-12">
-                    <div className="w-20 h-20 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto mb-6">
-                        <span className="text-3xl font-bold">{username.charAt(0).toUpperCase()}</span>
-                    </div>
-                    <h1 className="text-3xl font-bold mb-2 text-foreground">Welcome Back</h1>
-                    <p className="text-foreground-muted mb-8 italic">
-                        Hello, <span className="font-semibold text-foreground">{username}</span> 👋
-                    </p>
+  const navItems = [
+    { icon: <HomeIcon size={20} />, label: 'Dashboard', onClick: () => {} },
+    { icon: <User size={20} />, label: 'Profile', onClick: () => navigate('/profile') },
+  ];
 
-                    <div className="flex flex-col gap-3">
-                        <Button
-                            onClick={() => navigate('/profile')}
-                            variant="primary"
-                            className="w-full"
-                        >
-                            View Profile
-                        </Button>
-                        <Button
-                            onClick={handleLogout}
-                            variant="secondary"
-                            className="w-full"
-                        >
-                            Log out
-                        </Button>
-                    </div>
-                </CardContent>
-            </Card>
+  return (
+    <div className="flex min-h-screen bg-gray-50">
+      {/* Drawer */}
+      <Drawer open={drawerOpen} onToggle={setDrawerOpen}>
+        {/* Content inside drawer */}
+        <div className="flex flex-col h-full">
+          <div className="flex items-center justify-between p-4 border-b">
+            <h1 className={`font-bold text-lg text-green-600 ${!drawerOpen && 'hidden'}`}>
+              SmartVegis
+            </h1>
+            <button
+              onClick={() => setDrawerOpen(!drawerOpen)}
+              className="p-2 rounded-lg hover:bg-gray-100"
+            >
+              <Menu size={20} />
+            </button>
+          </div>
+
+          <nav className="flex-1 p-4 space-y-2">
+            {navItems.map((item, idx) => (
+              <NavItem
+                key={idx}
+                icon={item.icon}
+                label={item.label}
+                open={drawerOpen}
+                onClick={item.onClick}
+              />
+            ))}
+          </nav>
+
+          <div className="p-4">
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-3 w-full p-3 rounded-lg text-red-600 hover:bg-red-50"
+            >
+              <LogOut size={20} />
+              {drawerOpen && <span>Logout</span>}
+            </button>
+          </div>
         </div>
-    );
-}
+      </Drawer>
+
+      {/* Main Content: Leaderboard */}
+      <main
+        className="transition-all duration-300 flex-1"
+        style={{ marginLeft: drawerOpen ? 256 : 80 }} // dynamically shifts with drawer
+      >
+        <Leaderboard />
+      </main>
+    </div>
+  );
+};
+
+const NavItem = ({ icon, label, open, onClick }) => (
+  <button
+    onClick={onClick}
+    className="flex items-center gap-3 w-full p-3 rounded-lg hover:bg-green-50 text-gray-700"
+  >
+    {icon}
+    {open && <span>{label}</span>}
+  </button>
+);
 
 export default Home;
-
