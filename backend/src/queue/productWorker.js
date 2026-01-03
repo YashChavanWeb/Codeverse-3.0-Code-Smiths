@@ -4,6 +4,13 @@ import { Basket } from "../basket/basketModel.js";
 import productEvents from "../utils/events.js";
 
 /**
+ * Fetch full product object with vendor info
+ */
+const getFullProduct = async (productId) => {
+  return await Product.findById(productId).populate("vendor", "storeName location");
+};
+
+/**
  * Process one job safely
  */
 const processJob = async (job) => {
@@ -19,10 +26,11 @@ const processJob = async (job) => {
       product.price = newPrice;
       await product.save();
 
+      const fullProduct = await getFullProduct(productId);
+
       productEvents.emit("productUpdate", {
         type: "PRICE_UPDATE",
-        productId,
-        newPrice,
+        product: fullProduct,
       });
       break;
     }
@@ -32,10 +40,7 @@ const processJob = async (job) => {
       const { productId, newStock, location } = payload;
 
       const product = await Product.findById(productId);
-      if (!product) {
-        console.error("STOCK_UPDATE: product not found", productId);
-        return;
-      }
+      if (!product) return;
 
       const oldStock = product.stock.current;
       product.stock.before = oldStock;
@@ -53,25 +58,24 @@ const processJob = async (job) => {
 
       // Recalculate Demand Index
       if (basket && newStock > 0) {
-        basket.demandIndex = Math.round(
-          (basket.demandCount / newStock) * 100
-        );
+        basket.demandIndex = Math.round((basket.demandCount / newStock) * 100);
         await basket.save();
       }
 
-      // 1. Emit standard product update
+      const fullProduct = await getFullProduct(productId);
+
+      // 1. Emit full product update
       productEvents.emit("productUpdate", {
         type: "STOCK_UPDATE",
-        productId,
-        newStock,
+        product: fullProduct,
         demandIndex: basket?.demandIndex || 0,
       });
 
-      // 2. Emit specific demand analytics update
+      // 2. Emit demand analytics separately
       productEvents.emit("demandUpdate", {
         type: "DEMAND_ANALYTICS",
-        location: location,
-        productId: productId,
+        location,
+        productId,
         demandIndex: basket?.demandIndex || 0,
         demandCount: basket?.demandCount || 0,
       });
@@ -83,10 +87,11 @@ const processJob = async (job) => {
       const { productId, available } = payload;
       await Product.findByIdAndUpdate(productId, { available });
 
+      const fullProduct = await getFullProduct(productId);
+
       productEvents.emit("productUpdate", {
         type: "AVAILABILITY_UPDATE",
-        productId,
-        available,
+        product: fullProduct,
       });
       break;
     }
@@ -96,10 +101,11 @@ const processJob = async (job) => {
       const { productId, name } = payload;
       await Product.findByIdAndUpdate(productId, { name });
 
+      const fullProduct = await getFullProduct(productId);
+
       productEvents.emit("productUpdate", {
         type: "TITLE_UPDATE",
-        productId,
-        name,
+        product: fullProduct,
       });
       break;
     }
