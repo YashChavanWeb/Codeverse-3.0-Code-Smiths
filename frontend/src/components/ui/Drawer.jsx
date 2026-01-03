@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 
 export const Drawer = React.forwardRef(
-  ({ open, onClose, role = "customer", width = "280px" }, ref) => {
+  ({ open, onClose, role = "vendor", width = "280px" }, ref) => {
     const navigate = useNavigate();
 
     React.useEffect(() => {
