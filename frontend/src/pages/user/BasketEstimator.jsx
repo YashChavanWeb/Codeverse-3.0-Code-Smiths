@@ -16,28 +16,21 @@ const products = [
   { id: 3, name: "Apple", price: 30 },
 ];
 
+import { useBasket } from "../../context/BasketContext";
+
 const BasketEstimator = () => {
-  const [basket, setBasket] = useState([]);
+  const { basket, addToBasket, basketTotal } = useBasket();
   const [showVendors, setShowVendors] = useState(false);
 
-  const addToBasket = (product) => {
+  const handleProductAdd = (product) => {
     setShowVendors(false);
-    setBasket((prev) => {
-      const found = prev.find((p) => p.id === product.id);
-      return found
-        ? prev.map((p) =>
-            p.id === product.id
-              ? { ...p, qty: p.qty + 1 }
-              : p
-          )
-        : [...prev, { ...product, qty: 1 }];
-    });
+    // Note: In real app, we'd need to know which vendor this "global" product belongs to
+    // For now, we'll mimic the old behavior by assigning it to a dummy vendor if needed,
+    // but ideally products in BasketEstimator should come from real vendors.
+    addToBasket(product, { _id: "dummy", name: "General" });
   };
 
-  const itemsTotal = basket.reduce(
-    (sum, item) => sum + item.price * item.qty,
-    0
-  );
+  const itemsTotal = basketTotal;
 
   const vendorTotal = (v) =>
     itemsTotal + v.distance * RATE_PER_KM;
@@ -45,8 +38,8 @@ const BasketEstimator = () => {
   const cheapest =
     basket.length > 0
       ? vendors.reduce((a, b) =>
-          vendorTotal(a) < vendorTotal(b) ? a : b
-        )
+        vendorTotal(a) < vendorTotal(b) ? a : b
+      )
       : null;
 
   return (
@@ -72,7 +65,7 @@ const BasketEstimator = () => {
             {products.map((p) => (
               <button
                 key={p.id}
-                onClick={() => addToBasket(p)}
+                onClick={() => handleProductAdd(p)}
                 className="w-full flex items-center justify-between py-3 border-b hover:text-green-600 transition"
               >
                 <span className="font-medium">{p.name}</span>
@@ -108,9 +101,9 @@ const BasketEstimator = () => {
                 Basket is empty
               </p>
             ) : (
-              basket.map((item) => (
+              basket.map((item, idx) => (
                 <div
-                  key={item.id}
+                  key={item._id || `${item.name}-${idx}`}
                   className="flex justify-between"
                 >
                   <span>

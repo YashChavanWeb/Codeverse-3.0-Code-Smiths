@@ -170,88 +170,88 @@ export default function LiveMap({ search = "", filteredVendors = [] }) {
     return <div className="p-10 text-center text-gray-500">Locating you...</div>;
 
   return (
-      <Card variant="glass" className="md:mx-10">
-        <div className="w-full max-w-4xl mx-auto p-2 flex flex-col gap-4">
+    <Card variant="glass" className="md:mx-10">
+      <div className="w-full max-w-4xl mx-auto p-2 flex flex-col gap-4">
 
-          <div className="relative border-2 border-gray-200 rounded-xl overflow-hidden shadow-lg">
-            <MapContainer
+        <div className="relative border-2 border-gray-200 rounded-xl overflow-hidden shadow-lg">
+          <MapContainer
+            center={userPos}
+            zoom={17}
+            scrollWheelZoom={true}
+            style={{ height: "70vh", width: "100%" }}
+            ref={mapRef}
+          >
+            <TileLayer
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              attribution='&copy; OpenStreetMap'
+            />
+
+            {/* User Marker */}
+            <Marker position={userPos} icon={userIcon}>
+              <Popup>You are here (Live)</Popup>
+            </Marker>
+
+            {/* Radius Circle */}
+            <Circle
               center={userPos}
-              zoom={17}
-              scrollWheelZoom={true}
-              style={{ height: "70vh", width: "100%" }}
-              ref={mapRef}
-            >
-              <TileLayer
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                attribution='&copy; OpenStreetMap'
-              />
+              radius={RADIUS}
+              pathOptions={{
+                color: "green",
+                fillColor: "blue",
+                fillOpacity: 0.1,
+                dashArray: "1,10",
+              }}
+            />
 
-              {/* User Marker */}
-              <Marker position={userPos} icon={userIcon}>
-                <Popup>You are here (Live)</Popup>
-              </Marker>
+            {/* Vendor Markers */}
+            {vendorsToShow.map((v, idx) => {
+              const distance = getDistanceFromLatLonInMeters(
+                userPos[0],
+                userPos[1],
+                v.lat,
+                v.lng
+              );
+              const isNearby = distance <= RADIUS;
 
-              {/* Radius Circle */}
-              <Circle
-                center={userPos}
-                radius={RADIUS}
-                pathOptions={{
-                  color: "green",
-                  fillColor: "blue",
-                  fillOpacity: 0.1,
-                  dashArray: "1,10",
-                }}
-              />
-
-              {/* Vendor Markers */}
-              {vendorsToShow.map((v, idx) => {
-                const distance = getDistanceFromLatLonInMeters(
-                  userPos[0],
-                  userPos[1],
-                  v.lat,
-                  v.lng
-                );
-                const isNearby = distance <= RADIUS;
-
-                return (
-                  <Marker
-                    key={idx}
-                    position={[v.lat, v.lng]}
-                    icon={vendorIcon}
-                    opacity={isNearby ? 1 : 0.4}
-                  >
-                    <Popup>
-                      <div className="text-center">
-                        <strong>{v.name}</strong>
-                        {v.items.map((item, i) => (
-                          <div key={i} className="flex items-center gap-2 mt-1 w-50">
-                            <img
-                              src={item.img}
-                              alt={item.name}
-                              className="w-15 h-15 rounded mr-5"
-                            />
-                            <div className="text-left text-sm">
-                              <div>{item.name}</div>
-                              <div className="text-gray-500">
-                                {item.unit} - ₹{item.price} <br />
-                                {distance.toFixed(0)} m away
-                              </div>
+              return (
+                <Marker
+                  key={idx}
+                  position={[v.lat, v.lng]}
+                  icon={vendorIcon}
+                  opacity={isNearby ? 1 : 0.4}
+                >
+                  <Popup>
+                    <div className="text-center">
+                      <strong>{v.name}</strong>
+                      {v.items.map((item, i) => (
+                        <div key={i} className="flex items-center gap-2 mt-1 w-50">
+                          <img
+                            src={item.img}
+                            alt={item.name}
+                            className="w-15 h-15 rounded mr-5"
+                          />
+                          <div className="text-left text-sm">
+                            <div>{item.name}</div>
+                            <div className="text-gray-500">
+                              {item.unit} - ₹{item.price} <br />
+                              {distance.toFixed(0)} m away
                             </div>
                           </div>
-                        ))}
-                      </div>
-                    </Popup>
-                  </Marker>
-                );
-              })}
-            </MapContainer>
-          </div>
-          <div className="absolute top-0 right-0 z-1500 m-2">
-            <Button size='sm' variant='primary' onClick={centerMap}>Center on Me</Button>
-          </div>
-
+                        </div>
+                      ))}
+                    </div>
+                  </Popup>
+                </Marker>
+              );
+            })}
+          </MapContainer>
         </div>
-      </Card>
+        <div className="absolute top-0 right-0 z-1500 m-2">
+          <Button size='sm' variant='primary' onClick={centerMap}>Center on Me</Button>
+        </div>
+
+      </div>
+    </Card>
   );
 }
 
@@ -263,9 +263,9 @@ function getDistanceFromLatLonInMeters(lat1, lon1, lat2, lon2) {
   const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
     Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2);
+    Math.cos((lat2 * Math.PI) / 180) *
+    Math.sin(dLon / 2) *
+    Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c;
 }
