@@ -1,27 +1,21 @@
 import React from 'react';
 
-const Card = ({ children, className = '', ...props }) => {
-    return (
-        <div
-            className={`bg-background rounded-xl border border-border shadow-md overflow-hidden flex flex-col ${className}`}
-            {...props}
-        >
-            {children}
-        </div>
-    );
-};
+const Card = ({ children, className = '' }) => (
+  <div className={`bg-white rounded-xl shadow-md ${className}`}>
+    {children}
+  </div>
+);
 
 const CardHeader = ({ children, className = '' }) => (
-    <div className={`p-4 border-b border-border ${className}`}>{children}</div>
+  <div className={`px-6 py-4 border-b font-semibold ${className}`}>
+    {children}
+  </div>
 );
 
 const CardContent = ({ children, className = '' }) => (
-    <div className={`p-4 flex-1 ${className}`}>{children}</div>
+  <div className={`px-6 py-4 ${className}`}>
+    {children}
+  </div>
 );
 
-const CardFooter = ({ children, className = '' }) => (
-    <div className={`p-4 border-t border-border bg-background-alt ${className}`}>{children}</div>
-);
-
-export { Card, CardHeader, CardContent, CardFooter };
-
+export { Card, CardHeader, CardContent };
