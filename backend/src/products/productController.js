@@ -1,5 +1,6 @@
 import { Product } from "./productModel.js";
 import { User } from "../auth/authModel.js";
+import productEvents from "../utils/events.js";
 
 // GET /location
 const getProductsByLocation = async (req, res) => {
@@ -9,34 +10,29 @@ const getProductsByLocation = async (req, res) => {
     minPrice,
     maxPrice,
     stockStatus,
-    sortByPrice, // 'asc' or 'desc'
-    sortByStock, // 'asc' or 'desc'
+    sortByPrice,
+    sortByStock,
     page = 1,
     limit = 10,
   } = req.query;
 
   try {
-    // 1. Find vendors in the specific city
     const vendors = await User.find({
-      location: new RegExp(city, "i"), // Case-insensitive city search
+      location: new RegExp(city, "i"),
       role: "vendor",
     }).select("_id");
 
     const vendorIds = vendors.map((v) => v._id);
-
-    // 2. Build the Product Filter
     const filter = { vendor: { $in: vendorIds } };
 
     if (category) filter.category = category;
 
-    // Price Range Filter
     if (minPrice || maxPrice) {
       filter.price = {};
       if (minPrice) filter.price.$gte = Number(minPrice);
       if (maxPrice) filter.price.$lte = Number(maxPrice);
     }
 
-    // Stock Status Filter (based on numerical stock values)
     if (stockStatus) {
       if (stockStatus === "low") filter.stock = { $gt: 0, $lt: 10 };
       else if (stockStatus === "med") filter.stock = { $gte: 10, $lte: 50 };
@@ -44,19 +40,16 @@ const getProductsByLocation = async (req, res) => {
       else if (stockStatus === "out") filter.stock = 0;
     }
 
-    // 3. Build the Sort Object
     let sortOptions = {};
     if (sortByPrice) {
       sortOptions.price = sortByPrice === "asc" ? 1 : -1;
     } else if (sortByStock) {
       sortOptions.stock = sortByStock === "asc" ? 1 : -1;
     } else {
-      sortOptions.createdAt = -1; // Default: Newest first
+      sortOptions.createdAt = -1;
     }
 
-    // 4. Execution with Pagination
     const skip = (Number(page) - 1) * Number(limit);
-
     const products = await Product.find(filter)
       .populate("vendor", "storeName location")
       .sort(sortOptions)
@@ -65,7 +58,6 @@ const getProductsByLocation = async (req, res) => {
 
     const total = await Product.countDocuments(filter);
 
-    // 5. Response
     res.status(200).json({
       success: true,
       total,
@@ -109,13 +101,19 @@ const createProduct = async (req, res) => {
       vendor: req.user._id,
     });
     await newProduct.save();
+
+    // SSE: Notify about new product addition
+    productEvents.emit("productUpdate", {
+      type: "NEW_PRODUCT",
+      product: newProduct,
+    });
+
     res.status(201).json(newProduct);
   } catch (error) {
     res.status(400).json({ message: "Creation failed", error: error.message });
   }
 };
 
-// Internal helper for ownership verification
 const verifyOwnershipAndStore = async (productId, userId) => {
   const product = await Product.findById(productId);
   if (!product) return { error: "Product not found", status: 404 };
@@ -149,6 +147,14 @@ const updateProductPrice = async (req, res) => {
 
     check.product.price = req.body.price;
     await check.product.save();
+
+    // SSE: Notify about price change
+    productEvents.emit("productUpdate", {
+      type: "PRICE_UPDATE",
+      productId: check.product._id,
+      newPrice: check.product.price,
+    });
+
     res.status(200).json(check.product);
   } catch (error) {
     res.status(400).json({ message: "Price update failed" });
@@ -164,6 +170,14 @@ const updateProductStock = async (req, res) => {
 
     check.product.stock = req.body.stock;
     await check.product.save();
+
+    // SSE: Notify about stock change
+    productEvents.emit("productUpdate", {
+      type: "STOCK_UPDATE",
+      productId: check.product._id,
+      newStock: check.product.stock,
+    });
+
     res.status(200).json(check.product);
   } catch (error) {
     res.status(400).json({ message: "Stock update failed" });
