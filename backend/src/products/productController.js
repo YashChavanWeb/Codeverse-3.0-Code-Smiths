@@ -18,6 +18,7 @@ const getProductsByLocation = async (req, res) => {
   } = req.query;
 
   try {
+    /* 
     const vendors = await User.find({
       location: new RegExp(city, "i"),
       role: "vendor",
@@ -25,6 +26,8 @@ const getProductsByLocation = async (req, res) => {
 
     const vendorIds = vendors.map((v) => v._id);
     const filter = { vendor: { $in: vendorIds } };
+    */
+    const filter = {}; // Fetch all products irrespective of location for now
 
     if (category) filter.category = category;
 
@@ -139,9 +142,11 @@ const updateProductTitle = async (req, res) => {
     name,
   });
 
-  res.json({ success: true, message: "Title update queued and frontend notified" });
+  res.json({
+    success: true,
+    message: "Title update queued and frontend notified",
+  });
 };
-
 
 const updateProductPrice = async (req, res) => {
   const check = await verifyOwnershipAndStore(req.params.id, req.user._id);
@@ -162,9 +167,11 @@ const updateProductPrice = async (req, res) => {
     newPrice: price,
   });
 
-  res.json({ success: true, message: "Price update queued and frontend notified" });
+  res.json({
+    success: true,
+    message: "Price update queued and frontend notified",
+  });
 };
-
 
 const updateProductStock = async (req, res) => {
   const check = await verifyOwnershipAndStore(req.params.id, req.user._id);
@@ -186,9 +193,11 @@ const updateProductStock = async (req, res) => {
     location: req.user.location,
   });
 
-  res.json({ success: true, message: "Stock update queued and frontend notified" });
+  res.json({
+    success: true,
+    message: "Stock update queued and frontend notified",
+  });
 };
-
 
 const updateProductAvailable = async (req, res) => {
   const check = await verifyOwnershipAndStore(req.params.id, req.user._id);
@@ -209,9 +218,11 @@ const updateProductAvailable = async (req, res) => {
     available,
   });
 
-  res.json({ success: true, message: "Availability update queued and frontend notified" });
+  res.json({
+    success: true,
+    message: "Availability update queued and frontend notified",
+  });
 };
-
 
 /* ---------- DELETE ---------- */
 const deleteProduct = async (req, res) => {
