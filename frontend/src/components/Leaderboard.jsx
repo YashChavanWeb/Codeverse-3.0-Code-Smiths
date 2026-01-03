@@ -24,10 +24,7 @@ const imageMap = {
   Mango: mango,
 };
 
-const BASE_URL = `${import.meta.env.VITE_BACKEND_URL}/products`;
-const PAGE_SIZE = 5;
-
-const LeaderBoard = () => {
+const LeaderBoard = ({ fetchUrl, streamUrl, title = "Leaderboard", pageSize = 5 }) => {
   const [products, setProducts] = useState([]);
   const [prevPrices, setPrevPrices] = useState({});
   const [page, setPage] = useState(1);
@@ -43,15 +40,15 @@ const LeaderBoard = () => {
 
   const sseRef = useRef(null);
 
-  /* ---------------- FETCH PRODUCTS ---------------- */
-  const fetchProducts = async (pageNo = 1) => {
+  /* ---------------- FETCH DATA ---------------- */
+  const fetchData = async (pageNo = 1) => {
+    if (!fetchUrl) return;
     try {
       setLoading(true);
-
-      const res = await axios.get(`${BASE_URL}/location`, {
+      const res = await axios.get(fetchUrl, {
         params: {
           page: pageNo,
-          limit: PAGE_SIZE,
+          limit: pageSize,
           category: category || undefined,
           stockStatus: stockStatus || undefined,
           sortByPrice: sortByPrice || undefined,
@@ -61,7 +58,6 @@ const LeaderBoard = () => {
 
       if (res.data?.success) {
         const fetched = res.data.data;
-
         setPrevPrices((prev) => {
           const map = { ...prev };
           fetched.forEach((p) => {
@@ -69,7 +65,6 @@ const LeaderBoard = () => {
           });
           return map;
         });
-
         setProducts(fetched);
         setPages(res.data.pages || 1);
       }
@@ -80,14 +75,14 @@ const LeaderBoard = () => {
     }
   };
 
-  /* Refetch whenever filters or page change */
   useEffect(() => {
-    fetchProducts(page);
-  }, [page, category, stockStatus, sortByPrice, sortByStock]);
+    fetchData(page);
+  }, [page, category, stockStatus, sortByPrice, sortByStock, fetchUrl]);
 
   /* ---------------- SSE UPDATES ---------------- */
   useEffect(() => {
-    sseRef.current = new EventSource(`${BASE_URL}/stream`);
+    if (!streamUrl) return;
+    sseRef.current = new EventSource(streamUrl);
 
     sseRef.current.onmessage = (event) => {
       const update = JSON.parse(event.data);
@@ -99,24 +94,21 @@ const LeaderBoard = () => {
       setProducts((prev) =>
         prev.map((p) => {
           if (p._id !== update.product._id) return p;
-
           setPrevPrices((prices) => ({
             ...prices,
             [p._id]: p.price,
           }));
-
           return { ...p, ...update.product };
         })
       );
     };
 
     return () => sseRef.current?.close();
-  }, []);
+  }, [streamUrl]);
 
-  /* ---------------- UI ---------------- */
   return (
     <div className="p-4 md:p-6 w-full max-h-[calc(100vh-120px)] overflow-y-auto">
-      <h2 className="text-2xl font-bold mb-6">Leaderboard</h2>
+      <h2 className="text-2xl font-bold mb-6">{title}</h2>
 
       {/* FILTER BAR */}
       <div className="flex flex-wrap gap-3 mb-6">
@@ -174,26 +166,16 @@ const LeaderBoard = () => {
         <table className="w-full border-collapse">
           <thead className="bg-gray-50 border-b border-gray-100">
             <tr>
-              <th className="p-4 text-left text-gray-600 font-bold uppercase text-xs tracking-wider">
-                Product
-              </th>
-              <th className="p-4 text-center text-gray-600 font-bold uppercase text-xs tracking-wider">
-                Category
-              </th>
-              <th className="p-4 text-center text-gray-600 font-bold uppercase text-xs tracking-wider">
-                Stock
-              </th>
-              <th className="p-4 text-center text-gray-600 font-bold uppercase text-xs tracking-wider">
-                Unit
-              </th>
-              <th className="p-4 text-center text-gray-600 font-bold uppercase text-xs tracking-wider">
-                Price
-              </th>
+              <th className="p-4 text-left text-gray-600 font-bold uppercase text-xs tracking-wider">Product</th>
+              <th className="p-4 text-center text-gray-600 font-bold uppercase text-xs tracking-wider">Category</th>
+              <th className="p-4 text-center text-gray-600 font-bold uppercase text-xs tracking-wider">Stock</th>
+              <th className="p-4 text-center text-gray-600 font-bold uppercase text-xs tracking-wider">Unit</th>
+              <th className="p-4 text-center text-gray-600 font-bold uppercase text-xs tracking-wider">Price</th>
             </tr>
           </thead>
 
           <tbody>
-            {loading ? (
+            {loading && products.length === 0 ? (
               <tr>
                 <td colSpan="5" className="p-8 text-center text-gray-400">
                   <div className="flex justify-center items-center gap-2">
@@ -205,9 +187,7 @@ const LeaderBoard = () => {
               </tr>
             ) : products.length === 0 ? (
               <tr>
-                <td colSpan="5" className="p-8 text-center text-gray-400">
-                  No products found
-                </td>
+                <td colSpan="5" className="p-8 text-center text-gray-400">No data found</td>
               </tr>
             ) : (
               <AnimatePresence mode="popLayout">
@@ -226,76 +206,32 @@ const LeaderBoard = () => {
                       animate={{
                         opacity: 1,
                         scale: isHighlighted ? 1.01 : 1,
-                        backgroundColor: isHighlighted
-                          ? "rgba(74, 222, 128, 0.2)"
-                          : "rgba(255, 255, 255, 0)",
-                        backdropFilter: isHighlighted ? "blur(8px)" : "blur(0px)",
-                        boxShadow: isHighlighted
-                          ? "inset 0 0 10px rgba(34, 197, 94, 0.1)"
-                          : "none",
-                        zIndex: isHighlighted ? 10 : 1,
+                        backgroundColor: isHighlighted ? "rgba(74, 222, 128, 0.2)" : "rgba(255, 255, 255, 0)",
                       }}
                       exit={{ opacity: 0, scale: 0.95 }}
-                      transition={{
-                        type: "spring",
-                        stiffness: 400,
-                        damping: 30,
-                        layout: { duration: 0.4 },
-                      }}
-                      className={`border-b border-gray-50 relative transition-colors hover:bg-gray-50/50`}
+                      className="border-b border-gray-50 relative transition-colors hover:bg-gray-50/50"
                     >
                       <td className="p-4 flex items-center gap-3">
                         <motion.img
-                          animate={{
-                            scale: isHighlighted ? 1.2 : 1,
-                            rotate: isHighlighted ? [0, -10, 10, 0] : 0,
-                          }}
+                          animate={{ scale: isHighlighted ? 1.2 : 1 }}
                           src={imageMap[p.name] || apple}
                           className="w-12 h-12 object-contain"
                         />
                         <span className="font-semibold text-gray-800">{p.name}</span>
                       </td>
-
                       <td className="p-4 text-center text-gray-500">{p.category}</td>
-
                       <td className="p-4 text-center">
-                        <span
-                          className={`px-3 py-1 rounded-full text-xs font-bold ${
-                            stockVal < 40
-                              ? "bg-red-100 text-red-600"
-                              : "bg-green-100 text-green-600"
-                          }`}
-                        >
+                        <span className={`px-3 py-1 rounded-full text-xs font-bold ${stockVal < 40 ? "bg-red-100 text-red-600" : "bg-green-100 text-green-600"}`}>
                           {stockVal}
                         </span>
                       </td>
-
                       <td className="p-4 text-center text-gray-500">{p.unit}</td>
-
                       <td className="p-4 text-center">
                         <div className="flex items-center justify-center gap-1 font-bold text-gray-800">
                           ₹{p.price}
                           <AnimatePresence mode="wait">
-                            {up && (
-                              <motion.div
-                                key="up"
-                                initial={{ y: 5, opacity: 0 }}
-                                animate={{ y: 0, opacity: 1 }}
-                                exit={{ y: -5, opacity: 0 }}
-                              >
-                                <ArrowUp className="w-4 text-red-600" />
-                              </motion.div>
-                            )}
-                            {down && (
-                              <motion.div
-                                key="down"
-                                initial={{ y: -5, opacity: 0 }}
-                                animate={{ y: 0, opacity: 1 }}
-                                exit={{ y: 5, opacity: 0 }}
-                              >
-                                <ArrowDown className="w-4 text-green-600" />
-                              </motion.div>
-                            )}
+                            {up && <motion.div key="up" initial={{ y: 5, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -5, opacity: 0 }}><ArrowUp className="w-4 text-red-600" /></motion.div>}
+                            {down && <motion.div key="down" initial={{ y: -5, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 5, opacity: 0 }}><ArrowDown className="w-4 text-green-600" /></motion.div>}
                           </AnimatePresence>
                         </div>
                       </td>
@@ -310,25 +246,9 @@ const LeaderBoard = () => {
 
       {/* PAGINATION */}
       <div className="flex justify-center items-center gap-4 mt-8">
-        <button
-          disabled={page === 1}
-          onClick={() => setPage((p) => p - 1)}
-          className="px-6 py-2 bg-white border border-gray-200 shadow-sm rounded-lg hover:bg-gray-50 disabled:opacity-50 transition-all font-medium"
-        >
-          Prev
-        </button>
-
-        <span className="bg-gray-100 px-4 py-2 rounded-lg font-bold text-gray-700">
-          {page} / {pages}
-        </span>
-
-        <button
-          disabled={page === pages}
-          onClick={() => setPage((p) => p + 1)}
-          className="px-6 py-2 bg-white border border-gray-200 shadow-sm rounded-lg hover:bg-gray-50 disabled:opacity-50 transition-all font-medium"
-        >
-          Next
-        </button>
+        <button disabled={page === 1} onClick={() => setPage((p) => p - 1)} className="px-6 py-2 bg-white border border-gray-200 shadow-sm rounded-lg hover:bg-gray-50 disabled:opacity-50 transition-all font-medium">Prev</button>
+        <span className="bg-gray-100 px-4 py-2 rounded-lg font-bold text-gray-700">{page} / {pages}</span>
+        <button disabled={page === pages} onClick={() => setPage((p) => p + 1)} className="px-6 py-2 bg-white border border-gray-200 shadow-sm rounded-lg hover:bg-gray-50 disabled:opacity-50 transition-all font-medium">Next</button>
       </div>
     </div>
   );
