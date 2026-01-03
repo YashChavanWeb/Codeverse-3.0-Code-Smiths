@@ -7,22 +7,32 @@ const productSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+
     category: {
       type: String,
       required: true,
-      enum: ["Vegetable", "Fruit"], // Based on your dataset
+      enum: ["Vegetable", "Fruit"],
       trim: true,
     },
+
+    // ✅ ADD THIS
+    imageUrl: {
+      type: String,
+      required: true,
+    },
+
     price: {
       type: Number,
       required: true,
       min: 0,
     },
+
     unit: {
       type: String,
       required: true,
-      enum: ["kg", "bunch", "piece", "box", "dozen"], // Matches your data units
+      enum: ["kg", "bunch", "piece", "box", "dozen"],
     },
+
     stock: {
       current: {
         type: Number,
@@ -34,10 +44,12 @@ const productSchema = new mongoose.Schema(
         default: 0,
       },
     },
+
     available: {
       type: Boolean,
       default: true,
     },
+
     vendor: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -47,8 +59,8 @@ const productSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Indexing for faster searches by category or name
 productSchema.index({ name: "text", category: 1 });
+
 const Product = mongoose.model("Product", productSchema);
 
 export { Product };
