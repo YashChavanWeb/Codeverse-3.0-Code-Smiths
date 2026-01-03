@@ -1,231 +1,150 @@
-import React, { useEffect, useRef, useState } from "react";
-import { MapContainer, TileLayer, Marker, Circle, Popup } from "react-leaflet";
-import L from "leaflet";
-import "leaflet/dist/leaflet.css";
+import React, { useState } from "react";
+import LiveMap, { vendors as allVendors } from "../../components/LiveMap";
+import { Input, Button, Card } from "../../components/ui";
+import { List } from "lucide-react";
+import logo from '../../assets/Images/logo.png';
 
-import { Card, CardContent } from "../../components/ui";
-import { Button } from "../../components/ui";
+const LiveLocationMap = () => {
+  const [search, setSearch] = useState("");
+  const [filteredVendors, setFilteredVendors] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [showList, setShowList] = useState(false);
 
-/* ---------------- ICONS ---------------- */
+  const handleSearch = () => {
+    setLoading(true);
 
-const userIcon = new L.Icon({
-  iconUrl:
-    "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png",
-  shadowUrl:
-    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-});
-
-const vendorIcon = new L.Icon({
-  iconUrl:
-    "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-green.png",
-  shadowUrl:
-    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-});
-
-/* ---------------- DUMMY VENDORS ---------------- */
-
-const vendors = [
-  {
-    id: 1,
-    name: "Fresh Fruits Stall",
-    lat: 19.3860,
-    lng: 72.8275,
-    image: "https://images.unsplash.com/photo-1542838132-92c53300491e",
-    veggie: "Tomato",
-    price: 32,
-    unit: "kg",
-    rating: 4.4,
-  },
-  {
-    id: 2,
-    name: "Local Grocery Store",
-    lat: 19.3863,
-    lng: 72.8289,
-    image: "https://images.unsplash.com/photo-1586201375761-83865001e31b",
-    veggie: "Potato",
-    price: 28,
-    unit: "kg",
-    rating: 4.1,
-  },
-  {
-    id: 3,
-    name: "Green Veg Hub",
-    lat: 19.3850,
-    lng: 72.8290,
-    image: "https://images.unsplash.com/photo-1610832958506-aa56368176cf",
-    veggie: "Onion",
-    price: 35,
-    unit: "kg",
-    rating: 4.2,
-  },
-];
-
-const RADIUS = 500;
-
-/* ---------------- MAIN PAGE ---------------- */
-
-export default function LocationLiveMap() {
-  const [userPos, setUserPos] = useState(null);
-  const mapRef = useRef(null);
-
-  useEffect(() => {
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setUserPos([pos.coords.latitude, pos.coords.longitude]);
-      },
-      () => {
-        alert("Turn on location bro");
-      },
-      { enableHighAccuracy: true }
-    );
-  }, []);
-
-  if (!userPos) {
-    return (
-      <div className="p-10 text-center text-gray-500">
-        Finding you on earth...
-      </div>
-    );
-  }
-
-  const enrichedVendors = vendors
-    .map((v) => ({
-      ...v,
-      distance: getDistanceFromLatLonInMeters(
-        userPos[0],
-        userPos[1],
-        v.lat,
-        v.lng
-      ),
-    }))
-    .filter((v) => v.distance <= RADIUS)
-    .sort((a, b) => a.distance - b.distance);
+    setTimeout(() => {
+      const results = allVendors.filter((v) =>
+        v.items?.some((item) =>
+          item.name.toLowerCase().includes(search.toLowerCase())
+        )
+      );
+      setFilteredVendors(results);
+      setLoading(false);
+      setShowList(true);
+    }, 400);
+  };
 
   return (
-    <div className="w-full h-[80vh] grid grid-cols-1 md:grid-cols-3 gap-4 p-4">
-      {/* ---------------- MAP ---------------- */}
-      <div className="md:col-span-2 rounded-2xl overflow-hidden border shadow-lg">
-        <MapContainer
-          center={userPos}
-          zoom={17}
-          style={{ height: "100%", width: "100%" }}
-          ref={mapRef}
-        >
-          <TileLayer
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            attribution="© OpenStreetMap"
-          />
+    <div className="w-full h-screen flex flex-col">
+      {/* Search bar */}
+      <div className=" md:w-1/2 p-3 flex gap-2 mt-15 md:mt-20 md:ml-10">
+        <Input
+          placeholder="Search a fruit or vegetable..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              handleSearch();
+            }
+          }}
+        />
 
-          <Marker position={userPos} icon={userIcon}>
-            <Popup>You are here</Popup>
-          </Marker>
-
-          <Circle
-            center={userPos}
-            radius={RADIUS}
-            pathOptions={{
-              color: "green",
-              fillOpacity: 0.08,
-              dashArray: "4",
-            }}
-          />
-
-          {enrichedVendors.map((v) => (
-            <Marker
-              key={v.id}
-              position={[v.lat, v.lng]}
-              icon={vendorIcon}
-            >
-              <Popup>
-                <div className="w-52">
-                  <img
-                    src={v.image}
-                    alt={v.name}
-                    className="h-20 w-full object-cover rounded-md mb-2"
-                  />
-
-                  <h3 className="font-semibold text-sm">{v.name}</h3>
-
-                  <p className="text-xs text-gray-600">
-                    {v.veggie} · ₹{v.price}/{v.unit}
-                  </p>
-
-                  <p className="text-xs text-gray-500">
-                    📍 {Math.round(v.distance)} m away
-                  </p>
-
-                  <p className="text-xs">⭐ {v.rating}</p>
-                </div>
-              </Popup>
-            </Marker>
-          ))}
-        </MapContainer>
+        <Button size='sm' onClick={handleSearch}>Search</Button>
       </div>
 
-      {/* ---------------- SIDE PANEL ---------------- */}
-      <div className="space-y-3 overflow-y-auto">
-        <h2 className="text-lg font-semibold px-1">
-          Nearby Vendors
-        </h2>
+      {/* Main layout */}
+      <div className="flex flex-1 relative overflow-hidden h-1/2">
+        <div className="flex-1">
+          <LiveMap search={search} filteredVendors={filteredVendors} />
+        </div>
 
-        {enrichedVendors.map((v) => (
-          <Card
-            key={v.id}
-            className="cursor-pointer hover:scale-[1.01]"
-            onClick={() =>
-              mapRef.current?.flyTo([v.lat, v.lng], 18)
-            }
+        <div className="hidden md:block w-1/3 bg-white overflow-y-auto mx-10 mb-10">
+          <VendorList vendors={filteredVendors} loading={loading} />
+        </div>
+
+        <div
+          className={`fixed bottom-0 left-0 right-0 bg-white rounded-t-2xl shadow-xl transform transition-transform duration-300 md:hidden
+            ${showList ? "translate-y-0" : "translate-y-full"}`}
+          style={{ height: "65vh" }}
+        >
+          <div className="p-3 border-b flex justify-between items-center">
+            <div className="font-semibold">Vendors</div>
+            <Button size="sm" onClick={() => setShowList(false)}>Close</Button>
+          </div>
+
+          <div className="overflow-y-auto h-full p-3">
+            <VendorList vendors={filteredVendors} loading={loading} />
+          </div>
+        </div>
+
+        {filteredVendors.length > 0 && !showList && (
+          <Button
+          variant='secondary'
+          size='sm'
+            onClick={() => setShowList(true)}
+            className="md:hidden fixed bottom-18 left-1/2 -translate-x-1/2 px-4 py-2 rounded-full flex items-center gap-2 shadow-lg"
           >
-            <CardContent className="flex gap-4 items-center">
-              <img
-                src={v.image}
-                alt={v.name}
-                className="h-14 w-14 rounded-xl object-cover"
-              />
-
-              <div className="flex-1">
-                <p className="font-semibold text-sm">{v.name}</p>
-
-                <p className="text-xs text-gray-600">
-                  {v.veggie} · ₹{v.price}/{v.unit}
-                </p>
-
-                <p className="text-xs text-gray-500">
-                  {Math.round(v.distance)} m away
-                </p>
-              </div>
-
-              <Button size="sm">View</Button>
-            </CardContent>
-          </Card>
-        ))}
-
-        {enrichedVendors.length === 0 && (
-          <p className="text-sm text-gray-500 px-2">
-            No vendors nearby. Tough luck.
-          </p>
+            <List size={18} />
+            List Vendors
+          </Button>
         )}
       </div>
     </div>
   );
-}
+};
 
-/* ---------------- DISTANCE UTILS ---------------- */
+export default LiveLocationMap;
 
-function getDistanceFromLatLonInMeters(lat1, lon1, lat2, lon2) {
-  const R = 6371000;
-  const dLat = ((lat2 - lat1) * Math.PI) / 180;
-  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+const VendorList = ({ vendors, loading }) => {
+  const handleAddToBasket = (vendor, item) => {
+    console.log("Added to basket:", {
+      vendor: vendor.name,
+      item,
+    });
 
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLon / 2) ** 2;
+    // later:
+    // dispatch(addToCart({ vendorId, item }))
+  };
 
-  return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
-}
+  if (loading)
+    return <div className="text-center text-gray-500">Searching…</div>;
+
+  if (!vendors.length)
+    return <div className="text-center text-gray-400">
+      <img src={logo} alt="SmartVeggie" className="mx-auto w-20 h-20" />
+      <span>No vendors found</span></div>;
+
+  return (
+    <div className="flex flex-col gap-3 mb-30">
+      <span className="text-xl font-bold">Vendors List</span>
+
+      {vendors.map((v, idx) => (
+        <Card key={idx} variant="subtle" className="px-6 py-4">
+          <div className="font-semibold mb-2">{v.name}</div>
+
+          {v.items.map((item, i) => (
+            <div
+              key={i}
+              className="flex items-center justify-between gap-3 mt-3"
+            >
+              <div className="flex justify-around items-center gap-3">
+                <img
+                  src={item.img}
+                  alt={item.name}
+                  className="w-10 h-10 rounded"
+                />
+
+                <div className="text-sm">
+                  <div className="italic px-2">{item.name}</div>
+                  <div className="bg-green-800/30 px-2 py-1 mt-2 rounded-full ">
+                    ₹{item.price}/{item.unit}
+                  </div>
+                </div>
+              </div>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleAddToBasket(v, item)}
+                className='scale-80 sm:scale-90 translate-x-6 md:translate-x-0'
+              >
+                Add to Basket
+              </Button>
+            </div>
+          ))}
+        </Card>
+      ))}
+    </div>
+  );
+};

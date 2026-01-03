@@ -52,16 +52,16 @@ const Drawer = ({ open, onToggle, role: propRole }) => {
 
   const menuConfig = {
     user: [
-      { label: "Dashboard", icon: <HomeIcon size={20} />, path: "/" },
-      { label: "Location Vendors", icon: <MapPin size={20} />, path: "/location-vendors" },
-      { label: "Basket Estimator", icon: <DollarSign size={20} />, path: "/basket-estimator" },
+      { label: "Dashboard", icon: <HomeIcon size={25} />, path: "/" },
+      { label: "Location Vendors", icon: <MapPin size={25} />, path: "/location-vendors" },
+      { label: "Basket Estimator", icon: <DollarSign size={25} />, path: "/basket-estimator" },
     ],
     vendor: [
-      { label: "Dashboard", icon: <HomeIcon size={20} />, path: "/vendor" },
-      { label: "Add Products", icon: <PlusSquare size={20} />, path: "/vendor/add" },
-      { label: "Manage Products", icon: <Tag size={20} />, path: "/vendor/products" },
-      { label: "Market Insights", icon: <BarChart2 size={20} />, path: "/vendor/compare" },
-      { label: "Voice Updates", icon: <Mic size={20} />, path: "/vendor/add/voice" },
+      { label: "Dashboard", icon: <HomeIcon size={25} />, path: "/vendor" },
+      { label: "Add Products", icon: <PlusSquare size={25} />, path: "/vendor/add" },
+      { label: "Manage Products", icon: <Tag size={25} />, path: "/vendor/products" },
+      { label: "Market Insights", icon: <BarChart2 size={25} />, path: "/vendor/compare" },
+      { label: "Voice Updates", icon: <Mic size={25} />, path: "/vendor/add/voice" },
     ],
   };
 
@@ -82,7 +82,7 @@ const Drawer = ({ open, onToggle, role: propRole }) => {
             onClick={() => onToggle(!open)}
             className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
           >
-            {open ? <X size={20} /> : <Menu size={20} />}
+            {open ? <X size={25} /> : <Menu size={25} />}
           </button>
         </div>
 
@@ -118,7 +118,7 @@ const Drawer = ({ open, onToggle, role: propRole }) => {
               ${location.pathname === "/profile" ? "bg-gray-100 text-gray-900" : ""}
             `}
           >
-            <User size={20} />
+            <User size={25} />
             {open && <span className="font-medium text-sm">Profile</span>}
           </button>
 
@@ -126,7 +126,7 @@ const Drawer = ({ open, onToggle, role: propRole }) => {
             onClick={handleLogout}
             className="flex items-center gap-3 w-full p-4 rounded-xl text-red-600 hover:bg-red-50 transition-colors"
           >
-            <LogOut size={20} />
+            <LogOut size={25} />
             {open && <span className="font-medium text-sm">Logout</span>}
           </button>
         </div>
