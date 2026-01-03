@@ -3,11 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { Card, CardContent, Button } from "./ui";
 import { Drawer } from "../components/ui/Drawer";
 import { Menu } from "lucide-react";
+import SimpleMap from "./LiveMap";
 
 function Home() {
   const navigate = useNavigate();
   const username = localStorage.getItem("username") || "Guest";
-  const role = localStorage.getItem("role") || "vendor"; // customer / vendor
+  const role = localStorage.getItem("role") || "customer"; // customer / vendor
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   const handleLogout = () => {
@@ -33,8 +34,10 @@ function Home() {
       {/* Drawer Component */}
       <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)} role={role} />
 
+
       {/* Main Content */}
-      <main className="flex-1 flex items-center justify-center p-6">
+      <main className="flex-col sm:flex-1 flex items-center justify-center p-6">
+      < SimpleMap />
         <Card variant="glass" className="w-full max-w-md text-center">
           <CardContent className="py-12">
             <div className="w-20 h-20 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto mb-6">

@@ -21,7 +21,7 @@ export const Drawer = React.forwardRef(
     // All options
     const options = [
       { label: "Leaderboard", icon: <Trophy size={18} /> },
-      { label: "Location Vendors", icon: <MapPin size={18} /> },
+      { label: "Vendors Map", icon: <MapPin size={18} /> },
       { label: "Product Comparison", icon: <ShoppingCart size={18} /> },
       { label: "Basket Estimator", icon: <DollarSign size={18} /> },
       { label: "Add Products", icon: <PlusSquare size={18} /> },
@@ -39,7 +39,7 @@ export const Drawer = React.forwardRef(
         {/* Desktop Sidebar */}
         <div
           ref={ref}
-          className={`hidden md:flex fixed top-0 left-0 h-full bg-white shadow-xl transform transition-transform z-40 ${
+          className={`hidden md:flex fixed top-0 left-0 h-full bg-white shadow-xl transform transition-transform z-2000 ${
             open ? "translate-x-0" : "-translate-x-full"
           }`}
           style={{ width }}
