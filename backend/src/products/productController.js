@@ -1,7 +1,6 @@
 import { Product } from "./productModel.js";
 import { User } from "../auth/authModel.js";
 import productEvents from "../utils/events.js";
-import { addToQueue } from "../queue/productQueue.js";
 
 const getProductsByLocation = async (req, res) => {
   const {
@@ -69,7 +68,6 @@ const getProductsByLocation = async (req, res) => {
   }
 };
 
-
 /* ---------- GET SINGLE ---------- */
 const getProductById = async (req, res) => {
   const product = await Product.findById(req.params.id).populate(
@@ -93,15 +91,15 @@ const createProduct = async (req, res) => {
     vendor: req.user._id,
   });
 
-  productEvents.emit("productUpdate", {
-    type: "NEW_PRODUCT",
-    product,
-  });
+  // Emit complete product data via SSE for real-time updates
+  await emitProductUpdate(product._id, "NEW_PRODUCT");
 
   // Create new product notification (async - don't block response)
   setTimeout(async () => {
     try {
-      const { createNewProductNotification } = await import("../notifications/notificationController.js");
+      const { createNewProductNotification } = await import(
+        "../notifications/notificationController.js"
+      );
       await createNewProductNotification(product._id);
     } catch (err) {
       console.error("Error creating new product notification:", err);
@@ -120,6 +118,26 @@ const verifyOwnershipAndStore = async (productId, userId) => {
   return { product };
 };
 
+/* ---------- SSE HELPER ---------- */
+const emitProductUpdate = async (productId, updateType) => {
+  try {
+    // Fetch complete product with populated vendor data
+    const product = await Product.findById(productId).populate(
+      "vendor",
+      "storeName location"
+    );
+
+    if (product) {
+      productEvents.emit("productUpdate", {
+        type: updateType,
+        product: product.toObject(), // Send complete product data
+      });
+    }
+  } catch (error) {
+    console.error("Error emitting product update:", error);
+  }
+};
+
 const updateProductTitle = async (req, res) => {
   const check = await verifyOwnershipAndStore(req.params.id, req.user._id);
   if (check.error)
@@ -127,19 +145,17 @@ const updateProductTitle = async (req, res) => {
 
   const { name } = req.body;
 
-  // Emit immediate SSE for real-time updates
-  productEvents.emit("productUpdate", {
-    type: "TITLE_UPDATE",
-    product: { _id: check.product._id, name },
-  });
+  // Update name in database first
+  check.product.name = name;
+  await check.product.save();
 
-  // Queue DB write
-  await addToQueue("TITLE_UPDATE", {
-    productId: check.product._id,
-    name,
-  });
+  // Emit complete product data via SSE for real-time updates
+  await emitProductUpdate(check.product._id, "TITLE_UPDATE");
 
-  res.json({ success: true, message: "Title update queued and frontend notified" });
+  res.json({
+    success: true,
+    message: "Title updated and frontend notified",
+  });
 };
 
 const updateProductPrice = async (req, res) => {
@@ -150,29 +166,26 @@ const updateProductPrice = async (req, res) => {
   const { price } = req.body;
   const oldPrice = check.product.price;
 
-  // Emit immediate SSE for real-time updates
-  productEvents.emit("productUpdate", {
-    type: "PRICE_UPDATE",
-    product: { _id: check.product._id, price },
-  });
+  // Update price in database first
+  check.product.price = price;
+  await check.product.save();
 
-  // Queue DB write
-  await addToQueue("PRICE_UPDATE", {
-    productId: check.product._id,
-    newPrice: price,
-  });
+  // Emit complete product data via SSE for real-time updates
+  await emitProductUpdate(check.product._id, "PRICE_UPDATE");
 
   // Create price change notification (async - don't block response)
   setTimeout(async () => {
     try {
-      const { createPriceChangeNotification } = await import("../notifications/notificationController.js");
+      const { createPriceChangeNotification } = await import(
+        "../notifications/notificationController.js"
+      );
       await createPriceChangeNotification(check.product._id, oldPrice, price);
     } catch (err) {
       console.error("Error creating price notification:", err);
     }
   }, 0);
 
-  res.json({ success: true, message: "Price update queued and frontend notified" });
+  res.json({ success: true, message: "Price updated and frontend notified" });
 };
 
 const updateProductStock = async (req, res) => {
@@ -183,30 +196,27 @@ const updateProductStock = async (req, res) => {
   const { stock } = req.body;
   const oldStock = check.product.stock.current;
 
-  // Emit immediate SSE for real-time updates
-  productEvents.emit("productUpdate", {
-    type: "STOCK_UPDATE",
-    product: { _id: check.product._id, stock: { current: stock } },
-  });
+  // Update stock in database first
+  check.product.stock.before = check.product.stock.current;
+  check.product.stock.current = stock;
+  await check.product.save();
 
-  // Queue DB write
-  await addToQueue("STOCK_UPDATE", {
-    productId: check.product._id,
-    newStock: stock,
-    location: req.user.location,
-  });
+  // Emit complete product data via SSE for real-time updates
+  await emitProductUpdate(check.product._id, "STOCK_UPDATE");
 
   // Create stock change notification (async - don't block response)
   setTimeout(async () => {
     try {
-      const { createStockChangeNotification } = await import("../notifications/notificationController.js");
+      const { createStockChangeNotification } = await import(
+        "../notifications/notificationController.js"
+      );
       await createStockChangeNotification(check.product._id, oldStock, stock);
     } catch (err) {
       console.error("Error creating stock notification:", err);
     }
   }, 0);
 
-  res.json({ success: true, message: "Stock update queued and frontend notified" });
+  res.json({ success: true, message: "Stock updated and frontend notified" });
 };
 
 const updateProductAvailable = async (req, res) => {
@@ -217,29 +227,33 @@ const updateProductAvailable = async (req, res) => {
   const { available } = req.body;
   const wasAvailable = check.product.available;
 
-  // Emit immediate SSE for real-time updates
-  productEvents.emit("productUpdate", {
-    type: "AVAILABILITY_UPDATE",
-    product: { _id: check.product._id, available },
-  });
+  // Update availability in database first
+  check.product.available = available;
+  await check.product.save();
 
-  // Queue DB write
-  await addToQueue("AVAILABILITY_UPDATE", {
-    productId: check.product._id,
-    available,
-  });
+  // Emit complete product data via SSE for real-time updates
+  await emitProductUpdate(check.product._id, "AVAILABILITY_UPDATE");
 
   // Create availability change notification (async - don't block response)
   setTimeout(async () => {
     try {
-      const { createAvailabilityChangeNotification } = await import("../notifications/notificationController.js");
-      await createAvailabilityChangeNotification(check.product._id, wasAvailable, available);
+      const { createAvailabilityChangeNotification } = await import(
+        "../notifications/notificationController.js"
+      );
+      await createAvailabilityChangeNotification(
+        check.product._id,
+        wasAvailable,
+        available
+      );
     } catch (err) {
       console.error("Error creating availability notification:", err);
     }
   }, 0);
 
-  res.json({ success: true, message: "Availability update queued and frontend notified" });
+  res.json({
+    success: true,
+    message: "Availability updated and frontend notified",
+  });
 };
 
 /* ---------- DELETE ---------- */
@@ -359,13 +373,13 @@ const getVendorLeaderboard = async (req, res) => {
   try {
     // Match products by city if provided
     let productMatch = {};
-    
+
     if (city) {
       const vendorsInCity = await User.find({
         location: new RegExp(city, "i"),
         role: "vendor",
       }).select("_id");
-      
+
       const vendorIds = vendorsInCity.map((v) => v._id);
       if (vendorIds.length > 0) {
         productMatch.vendor = { $in: vendorIds };
@@ -505,7 +519,6 @@ const getVendorLeaderboard = async (req, res) => {
   }
 };
 
-
 /* ---------- GET VENDOR'S PRODUCTS ---------- */
 const getVendorProducts = async (req, res) => {
   const {
@@ -556,7 +569,7 @@ const getVendorProducts = async (req, res) => {
 
     // Sorting options
     let sortOptions = { createdAt: -1 }; // Default: newest first
-    
+
     if (sortByPrice) {
       sortOptions.price = sortByPrice === "asc" ? 1 : -1;
     } else if (sortByStock) {
@@ -565,13 +578,13 @@ const getVendorProducts = async (req, res) => {
 
     // Pagination
     const skip = (Number(page) - 1) * Number(limit);
-    
+
     // Execute query
     const products = await Product.find(filter)
-  .populate("vendor", "storeName location") // Add this line
-  .sort(sortOptions)
-  .skip(skip)
-  .limit(Number(limit));
+      .populate("vendor", "storeName location") // Add this line
+      .sort(sortOptions)
+      .skip(skip)
+      .limit(Number(limit));
 
     // Get total count for pagination
     const total = await Product.countDocuments(filter);
@@ -606,5 +619,5 @@ export {
   getVendorsWithProducts,
   getProductImageByName,
   getVendorLeaderboard,
-  getVendorProducts
+  getVendorProducts,
 };

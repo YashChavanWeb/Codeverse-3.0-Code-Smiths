@@ -22,6 +22,7 @@ const router = express.Router();
 
 // IMPORTANT: Static routes must come before parameterized routes
 router.get("/location", getProductsByLocation);
+router.get("/leaderboard", getProductsByLocation); // Alias for user dashboard
 router.get("/vendors-with-products", getVendorsWithProducts);
 router.get("/lookup-image", getProductImageByName);
 router.get("/vendor-leaderboard", getVendorLeaderboard);
@@ -36,7 +37,7 @@ router.get("/stream", (req, res) => {
   res.setHeader("Connection", "keep-alive");
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Headers", "Authorization");
-  
+
   // Flush headers immediately
   res.flushHeaders();
 
@@ -46,12 +47,17 @@ router.get("/stream", (req, res) => {
 
   // Listen for product updates
   productEvents.on("productUpdate", sendUpdate);
-  
+
   // Listen for demand updates
   productEvents.on("demandUpdate", sendUpdate);
 
   // Send initial connection message
-  res.write(`data: ${JSON.stringify({ type: "CONNECTED", message: "SSE Connection Established" })}\n\n`);
+  res.write(
+    `data: ${JSON.stringify({
+      type: "CONNECTED",
+      message: "SSE Connection Established",
+    })}\n\n`
+  );
 
   // Keep-alive ping
   const keepAliveInterval = setInterval(() => {

@@ -3,33 +3,34 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
 // UI Components
-import { Button, CardHeader } from "../../components/ui";
-import Leaderboard from "../../components/Leaderboard";
+import { Button } from "../../components/ui";
 import VendorLeaderboard from "../../components/VendorLeaderboard";
 
 // Context
 import { useAuth } from "../../context/AuthContext";
-import { Card } from "../../components/ui";
 
 const VendorDashboard = () => {
   const navigate = useNavigate();
   const { token } = useAuth();
 
-  // Local State for User Data
+  // Local State
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [leaderboardError, setLeaderboardError] = useState(null);
+  const [error, setError] = useState(null);
 
-  // Define API Endpoints - Scoped for Vendor
+  // API Endpoints
   const PROFILE_URL = `${import.meta.env.VITE_BACKEND_URL}/auth/me`;
-  const VENDOR_PRODUCTS_FETCH_URL = `${import.meta.env.VITE_BACKEND_URL}/products/location`;
   const PRODUCTS_STREAM_URL = `${import.meta.env.VITE_BACKEND_URL}/products/stream`;
   const VENDOR_LEADERBOARD_URL = `${import.meta.env.VITE_BACKEND_URL}/products/vendor-leaderboard`;
 
   /* ---------------- FETCH USER PROFILE ---------------- */
   useEffect(() => {
     const fetchUserProfile = async () => {
-      if (!token) return;
+      if (!token) {
+        setLoading(false);
+        return;
+      }
+
       try {
         setLoading(true);
         const response = await axios.get(PROFILE_URL, {
@@ -39,8 +40,8 @@ const VendorDashboard = () => {
         });
         setUserData(response.data.user);
       } catch (err) {
-        console.error("Error fetching profile on VendorDashboard:", err);
-        setLeaderboardError("Failed to load user profile");
+        console.error("Error fetching vendor profile:", err);
+        setError("Failed to load vendor profile.");
       } finally {
         setLoading(false);
       }
@@ -49,11 +50,11 @@ const VendorDashboard = () => {
     fetchUserProfile();
   }, [token, PROFILE_URL]);
 
-  /* ---------------- DATA MAPPING ---------------- */
+  /* ---------------- DATA PREP ---------------- */
   const username = userData?.username || "Vendor";
   const userInitial = username.charAt(0).toUpperCase();
   const storeDisplayName = userData?.storeName || "your store";
-  const userCity = userData?.location?.address || userData?.location || "";
+  const userCity = userData?.location?.address || userData?.location || "Unknown Location";
 
   if (loading) {
     return (
@@ -64,69 +65,78 @@ const VendorDashboard = () => {
   }
 
   return (
-    <div className="p-4 md:p-8 max-w-full mx-auto w-full space-y-8 mb-20">
-      {/* Welcome Section */}
-      <section className="flex flex-col md:flex-row items-center justify-between gap-6">
-        <div className="flex items-center gap-4">
-          <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-2xl font-bold shadow-sm">
+    <div className="p-4 md:p-8 max-w-7xl mx-auto w-full space-y-8 mb-20">
+
+      {/* 1. Welcome Section (Vendor Styled) */}
+      <section className="flex flex-col md:flex-row items-center justify-between gap-6 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+        <div className="flex items-center gap-5">
+          <div className="w-16 h-16 bg-gradient-to-br from-green-400 to-green-600 text-white rounded-2xl flex items-center justify-center text-2xl font-bold shadow-lg transform -rotate-3">
             {userInitial}
           </div>
           <div>
-            <h2 className="text-lg sm:text-2xl font-bold text-gray-800">
+            <h2 className="text-2xl font-bold text-gray-800">
               Welcome back, {username}!
             </h2>
-            <p className="text-sm sm:text-md text-gray-500">
-              Managing {storeDisplayName} • {userCity}
+            <p className="text-gray-500">
+              Managing <span className="font-medium text-green-600">{storeDisplayName}</span> • {userCity}
             </p>
           </div>
         </div>
 
-        <div className="flex gap-3">
-          <Button onClick={() => navigate("/add-product")} className="bg-green-600 hover:bg-green-700 text-white">
-            Add New Product
+        <div className="flex gap-3 w-full md:w-auto">
+          <Button
+            onClick={() => navigate("/add-product")}
+            className="bg-green-600 hover:bg-green-700 text-white px-6 shadow-md"
+          >
+            + Add Product
           </Button>
-          <Button onClick={() => navigate("/my-products")} variant="outline" className="border-green-600 text-green-600 hover:bg-green-50">
-            View All Products
+          <Button
+            onClick={() => navigate("/my-products")}
+            variant="outline"
+            className="border-gray-200 hover:bg-gray-50"
+          >
+            My Inventory
           </Button>
         </div>
       </section>
 
-      {/* Vendor Leaderboard Section */}
-      <section className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden w-full">
-        <div className="p-4 border-b bg-gray-50/50">
-          <h3 className="font-semibold text-gray-700">Vendor Leaderboard</h3>
-          <p className="text-sm text-gray-500">
-            See how you rank against other vendors in your area
-          </p>
-          {leaderboardError && (
-            <p className="text-sm text-red-500 mt-1">{leaderboardError}</p>
-          )}
-        </div>
-        <div className="w-full">
-          <VendorLeaderboard
-            title="Top Vendors"
-            fetchUrl={VENDOR_LEADERBOARD_URL}
-            streamUrl={PRODUCTS_STREAM_URL}
-            pageSize={10}
-            showCityFilter={true}
-          />
-        </div>
-      </section>
+      {/* 2. Vendor Leaderboard Section */}
+      <div className="grid grid-cols-1 gap-8">
+        <section className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden w-full">
+          <div className="p-5 border-b bg-gray-50/50 flex justify-between items-center">
+            <div>
+              <h3 className="font-bold text-gray-800 text-lg">Market Standings</h3>
+              <p className="text-xs text-gray-500">How your store compares to others in {userCity}</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+              </span>
+              <span className="text-green-700 text-xs font-semibold tracking-wide uppercase">
+                Live Area Rankings
+              </span>
+            </div>
+          </div>
 
-      {/* My Products Section
-      <section className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden w-full">
-        <div className="p-4 border-b bg-gray-50/50">
-          <h3 className="font-semibold text-gray-700">My Inventory Performance</h3>
+          <div className="w-full">
+            <VendorLeaderboard
+              title="Regional Vendor Rankings"
+              fetchUrl={VENDOR_LEADERBOARD_URL}
+              streamUrl={PRODUCTS_STREAM_URL}
+              pageSize={10}
+              showCityFilter={true}
+            />
+          </div>
+        </section>
+      </div>
+
+      {/* 3. Error Feedback */}
+      {error && (
+        <div className="p-4 bg-red-50 border border-red-100 text-red-600 rounded-xl text-sm flex items-center gap-2">
+          <span className="text-lg">⚠️</span> {error}
         </div>
-        <div className="w-full">
-          <Leaderboard
-            title="My Products"
-            // fetchUrl={VENDOR_PRODUCTS_FETCH_URL}
-            streamUrl={PRODUCTS_STREAM_URL}
-            pageSize={5}
-          />
-        </div>
-      </section> */}
+      )}
     </div>
   );
 };

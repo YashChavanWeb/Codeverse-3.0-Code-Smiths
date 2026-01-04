@@ -285,7 +285,7 @@ const VendorProducts = () => {
                   </div>
                 )}
                 <Button
-                variant='ghost'
+                  variant='ghost'
                   onClick={() => fetchProducts(currentPage)}
                   className="p-2 hover:bg-slate-50 rounded-full transition-all active:scale-95 border border-slate-100"
                 >

@@ -4,10 +4,10 @@ import { ArrowUp, ArrowDown } from "lucide-react";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
 
-const LeaderBoard = ({ 
-  fetchUrl, 
-  streamUrl, 
-  title = "Leaderboard", 
+const LeaderBoard = ({
+  fetchUrl,
+  streamUrl,
+  title = "Leaderboard",
   pageSize = 5,
   city = "" // Add city prop
 }) => {
@@ -33,7 +33,7 @@ const LeaderBoard = ({
       console.log("Missing fetchUrl or token");
       return;
     }
-    
+
     try {
       setLoading(true);
       const params = {
@@ -60,7 +60,7 @@ const LeaderBoard = ({
       if (res.data?.success) {
         const fetched = res.data.data;
         console.log(`Fetched ${fetched.length} products`);
-        
+
         setPrevPrices((prev) => {
           const map = { ...prev };
           fetched.forEach((p) => {
@@ -92,7 +92,7 @@ const LeaderBoard = ({
       console.log("Missing streamUrl or token for SSE");
       return;
     }
-    
+
     // Close previous connection if exists
     if (sseRef.current) {
       sseRef.current.close();
@@ -109,7 +109,7 @@ const LeaderBoard = ({
         try {
           const update = JSON.parse(event.data);
           console.log("SSE update received:", update);
-          
+
           if (!update?.product?._id) return;
 
           setLastUpdatedId(update.product._id);
@@ -326,9 +326,9 @@ const LeaderBoard = ({
       {/* PAGINATION */}
       {products.length > 0 && pages > 1 && (
         <div className="flex justify-center items-center gap-4 mt-8">
-          <button 
-            disabled={page === 1} 
-            onClick={() => setPage((p) => p - 1)} 
+          <button
+            disabled={page === 1}
+            onClick={() => setPage((p) => p - 1)}
             className="px-6 py-2 bg-white border border-gray-200 shadow-sm rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium"
           >
             Prev
@@ -336,9 +336,9 @@ const LeaderBoard = ({
           <span className="bg-gray-100 px-4 py-2 rounded-lg font-bold text-gray-700">
             {page} / {pages}
           </span>
-          <button 
-            disabled={page === pages} 
-            onClick={() => setPage((p) => p + 1)} 
+          <button
+            disabled={page === pages}
+            onClick={() => setPage((p) => p + 1)}
             className="px-6 py-2 bg-white border border-gray-200 shadow-sm rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium"
           >
             Next
