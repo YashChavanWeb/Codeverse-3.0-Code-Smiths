@@ -1,9 +1,13 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
+const genAI = new GoogleGenerativeAI("AIzaSyAXnuY1pFdhIrBJzZoCaraC1zcSxC4ioFQ");
+
 export const parseVoiceInput = async (req, res) => {
-  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
   try {
     console.log("VOICE PARSE HIT");
+    console.log("BODY:", req.body);
+    console.log("USER:", req.user?._id);
+
     const { transcript, language } = req.body;
 
     if (!transcript) {
@@ -12,6 +16,7 @@ export const parseVoiceInput = async (req, res) => {
         message: "Transcript is required",
       });
     }
+
 
     /* ==============================
        🧠 INTENT-AWARE GEMINI PROMPT
@@ -51,21 +56,17 @@ User speech: "${transcript}"
 `;
 
     const model = genAI.getGenerativeModel({
-      model: "gemini-1.5-flash",
+      model: "gemini-2.5-flash",
     });
 
     const result = await model.generateContent(prompt);
     const rawText = result.response.text();
-    console.log("Gemini processed transcript:", rawText);
+    console.log("Gemini Key Loaded:", !!process.env.GEMINI_API_KEY);
+
 
     let parsed;
     try {
-      // Use regex to find the first JSON object in the response
-      const jsonMatch = rawText.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) {
-        throw new Error("No JSON found in response");
-      }
-      parsed = JSON.parse(jsonMatch[0]);
+      parsed = JSON.parse(rawText);
     } catch (err) {
       console.error("❌ Gemini returned invalid JSON:", rawText);
       return res.status(500).json({
