@@ -4,32 +4,30 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { Button, Card } from "./ui";
 
-/* ---------------- ICONS ---------------- */
 const userIcon = new L.Icon({
-  iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png",
-  shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
+  iconUrl:
+    "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png",
+  shadowUrl:
+    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
   iconSize: [25, 41],
   iconAnchor: [12, 41],
   popupAnchor: [1, -34],
 });
 
 const vendorIcon = new L.Icon({
-  iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-green.png",
-  shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
+  iconUrl:
+    "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-green.png",
+  shadowUrl:
+    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
   iconSize: [25, 41],
   iconAnchor: [12, 41],
   popupAnchor: [1, -34],
 });
 
-/* ---------------- STATIC SIMULATION COORDS ---------------- */
-const STATIC_VENDOR_COORDS = [
-  { lat: 19.3863, lng: 72.8289 }, // Nearby
-  { lat: 19.3850, lng: 72.8290 }, // Nearby
-  { lat: 19.3950, lng: 72.8350 }, // OUTSIDE (Approx 1.2km away)
-  { lat: 19.3890, lng: 72.8320 }, // Borderline/Nearby
-];
+
 
 const RADIUS = 500; // meters
+const MAX_ACCURACY = 20; // meters
 
 export default function LiveMap({ filteredVendors = [] }) {
   const [userPos] = useState([19.3858397, 72.8285238]);
@@ -37,34 +35,38 @@ export default function LiveMap({ filteredVendors = [] }) {
 
   const centerMap = () => {
     const map = mapRef.current;
-    if (map && userPos) {
-      map.flyTo(userPos, 16, { animate: true, duration: 1.5 });
-    }
+    if (map && userPos)
+      map.flyTo(userPos, 17, { animate: true, duration: 1.5 });
   };
 
   const vendorsToShow = filteredVendors.length > 0 ? filteredVendors : [];
 
+  if (!userPos)
+    return <div className="p-10 text-center text-gray-500">Locating you...</div>;
+
   return (
     <Card variant="glass" className="md:mx-10">
-      <div className="relative w-full max-w-4xl mx-auto p-2 flex flex-col gap-4">
+      <div className="w-full max-w-4xl mx-auto p-2 flex flex-col gap-4">
 
         <div className="relative border-2 border-gray-200 rounded-xl overflow-hidden shadow-lg">
           <MapContainer
             center={userPos}
-            zoom={15}
+            zoom={17}
             scrollWheelZoom={true}
             style={{ height: "70vh", width: "100%" }}
             ref={mapRef}
           >
             <TileLayer
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              attribution="&copy; OpenStreetMap"
+              attribution='&copy; OpenStreetMap'
             />
 
+            {/* User Marker */}
             <Marker position={userPos} icon={userIcon}>
               <Popup>You are here (Live)</Popup>
             </Marker>
 
+            {/* Radius Circle */}
             <Circle
               center={userPos}
               radius={RADIUS}
@@ -72,48 +74,43 @@ export default function LiveMap({ filteredVendors = [] }) {
                 color: "green",
                 fillColor: "blue",
                 fillOpacity: 0.1,
-                dashArray: "5, 10",
+                dashArray: "1,10",
               }}
             />
 
+            {/* Vendor Markers */}
             {vendorsToShow.map((v, idx) => {
-              const staticPos = STATIC_VENDOR_COORDS[idx % STATIC_VENDOR_COORDS.length];
               const distance = getDistanceFromLatLonInMeters(
-                userPos[0], userPos[1],
-                staticPos.lat, staticPos.lng
+                userPos[0],
+                userPos[1],
+                v.lat,
+                v.lng
               );
-
               const isNearby = distance <= RADIUS;
 
               return (
                 <Marker
-                  key={v._id || idx}
-                  position={[staticPos.lat, staticPos.lng]}
+                  key={idx}
+                  position={[v.lat, v.lng]}
                   icon={vendorIcon}
-                  opacity={isNearby ? 1 : 0.5} // Faded if outside radius
+                  opacity={isNearby ? 1 : 0.4}
                 >
                   <Popup>
-                    <div className="min-w-[150px]">
-                      <div className="font-bold border-b pb-1 mb-2">{v.name}</div>
-
-                      {/* DISTANCE BADGE */}
-                      <div className={`text-xs font-semibold mb-2 ${isNearby ? 'text-green-600' : 'text-red-500'}`}>
-                        {distance > 1000
-                          ? `Est. ${(distance / 1000).toFixed(2)} km away`
-                          : `Est. ${Math.round(distance)} m away`}
-                        {!isNearby && " (Outside Range)"}
-                      </div>
-
+                    <div className="text-center">
+                      <strong>{v.name}</strong>
                       {v.items.map((item, i) => (
-                        <div key={i} className="flex items-center gap-2 mt-1">
+                        <div key={i} className="flex items-center gap-2 mt-1 w-50">
                           <img
                             src={item.imageUrl || item.img}
                             alt={item.name}
-                            className="w-10 h-10 rounded object-cover"
+                            className="w-15 h-15 rounded mr-5"
                           />
-                          <div className="text-xs">
-                            <div className="font-medium">{item.name}</div>
-                            <div className="text-gray-500">₹{item.price} / {item.unit}</div>
+                          <div className="text-left text-sm">
+                            <div>{item.name}</div>
+                            <div className="text-gray-500">
+                              {item.unit} - ₹{item.price} <br />
+                              {distance.toFixed(0)} m away
+                            </div>
                           </div>
                         </div>
                       ))}
@@ -123,22 +120,19 @@ export default function LiveMap({ filteredVendors = [] }) {
               );
             })}
           </MapContainer>
-
-          {/* CENTER BUTTON */}
-          <div className="absolute top-4 right-4 z-[1000]">
-            <Button size="sm" onClick={centerMap}>
-              Center on Me
-            </Button>
-          </div>
         </div>
+        <div className="absolute top-0 right-0 z-1500 m-2">
+          <Button size='sm' variant='primary' onClick={centerMap}>Center on Me</Button>
+        </div>
+
       </div>
     </Card>
   );
 }
 
-/* ---------------- HAVERSINE FORMULA ---------------- */
+// --- Haversine Formula ---
 export function getDistanceFromLatLonInMeters(lat1, lon1, lat2, lon2) {
-  const R = 6371000;
+  const R = 6371000; // meters
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
   const dLon = ((lon2 - lon1) * Math.PI) / 180;
   const a =

@@ -1,12 +1,20 @@
 import express from "express";
 const router = express.Router();
-import { addToBasket, getRegionalDemand } from "./basketController.js";
+import {
+  addToBasket,
+  getRegionalDemand,
+  getEstimatorProducts,
+  estimateBasket,
+} from "./basketController.js";
 import verifyUser from "../auth/authMiddleware.js";
 import productEvents from "../utils/events.js";
 
 // Publicly visible regional demand
 // GET /api/v1/basket/stream/demand?city=Vasai
 router.get("/demand", getRegionalDemand);
+router.get("/estimator-products", getEstimatorProducts);
+router.post("/estimate", estimateBasket);
+
 router.get("/demand/stream", (req, res) => {
   const { city } = req.query;
 
