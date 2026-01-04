@@ -4,7 +4,6 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { Button, Card } from "./ui";
 
-/* ---------------- ICONS ---------------- */
 const userIcon = new L.Icon({
   iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png",
   shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
@@ -31,6 +30,52 @@ const STATIC_VENDOR_COORDS = [
 
 const RADIUS = 500; // meters
 
+function PopupCarousel({ items }) {
+  const [index, setIndex] = useState(0);
+
+  const prev = () => {
+    setIndex((i) => (i === 0 ? items.length - 1 : i - 1));
+  };
+
+  const next = () => {
+    setIndex((i) => (i === items.length - 1 ? 0 : i + 1));
+  };
+
+  const item = items[index];
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex items-center gap-2">
+        <img
+          src={item.imageUrl || item.img}
+          alt={item.name}
+          className="w-12 h-12 rounded object-cover"
+        />
+        <div className="text-xs">
+          <div className="font-medium">{item.name}</div>
+          <div className="text-gray-500">
+            ₹{item.price} / {item.unit}
+          </div>
+        </div>
+      </div>
+
+      <div className="flex justify-between items-center text-xs mt-1">
+        <button onClick={prev} className="px-2 py-1 bg-gray-100 rounded">
+          ◀
+        </button>
+
+        <span className="text-gray-400">
+          {index + 1} / {items.length}
+        </span>
+
+        <button onClick={next} className="px-2 py-1 bg-gray-100 rounded">
+          ▶
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function LiveMap({ filteredVendors = [] }) {
   const [userPos] = useState([19.3858397, 72.8285238]);
   const mapRef = useRef(null);
@@ -51,7 +96,7 @@ export default function LiveMap({ filteredVendors = [] }) {
         <div className="relative border-2 border-gray-200 rounded-xl overflow-hidden shadow-lg">
           <MapContainer
             center={userPos}
-            zoom={15}
+            zoom={16}
             scrollWheelZoom={true}
             style={{ height: "70vh", width: "100%" }}
             ref={mapRef}
@@ -104,19 +149,24 @@ export default function LiveMap({ filteredVendors = [] }) {
                         {!isNearby && " (Outside Range)"}
                       </div>
 
-                      {v.items.map((item, i) => (
-                        <div key={i} className="flex items-center gap-2 mt-1">
+                      {v.items.length === 1 ? (
+                        <div className="flex items-center gap-2 mt-1">
                           <img
-                            src={item.imageUrl || item.img}
-                            alt={item.name}
+                            src={v.items[0].imageUrl || v.items[0].img}
+                            alt={v.items[0].name}
                             className="w-10 h-10 rounded object-cover"
                           />
                           <div className="text-xs">
-                            <div className="font-medium">{item.name}</div>
-                            <div className="text-gray-500">₹{item.price} / {item.unit}</div>
+                            <div className="font-medium">{v.items[0].name}</div>
+                            <div className="text-gray-500">
+                              ₹{v.items[0].price} / {v.items[0].unit}
+                            </div>
                           </div>
                         </div>
-                      ))}
+                      ) : (
+                        <PopupCarousel items={v.items} />
+                      )}
+
                     </div>
                   </Popup>
                 </Marker>
@@ -124,8 +174,51 @@ export default function LiveMap({ filteredVendors = [] }) {
             })}
           </MapContainer>
 
+          <Card className="mt-4">
+  <div className="px-6 py-4">
+    <h3 className="font-semibold mb-2">
+      How this map works
+    </h3>
+
+    <ul className="text-sm text-gray-600 space-y-2">
+      <li className="flex gap-2">
+        <span>🔴</span>
+        <span>
+          <strong>Your location:</strong> This shows where you are right now.
+        </span>
+      </li>
+
+      <li className="flex gap-2">
+        <span>🟢</span>
+        <span>
+          <strong>Nearby vendors:</strong> Vendors inside a 500m walkable radius.
+        </span>
+      </li>
+
+      <li className="flex gap-2">
+        <span>⚪</span>
+        <span>
+          <strong>Faded vendors:</strong> Slightly farther away, shown for price comparison.
+        </span>
+      </li>
+
+      <li className="flex gap-2">
+        <span>🔵</span>
+        <span>
+          <strong>Blue circle:</strong> Active service radius around you.
+        </span>
+      </li>
+    </ul>
+
+    <p className="mt-3 text-xs text-gray-400">
+      Distances are GPS-based estimates. Real life traffic may still humble you.
+    </p>
+  </div>
+</Card>
+
+
           {/* CENTER BUTTON */}
-          <div className="absolute top-4 right-4 z-[1000]">
+          <div className="absolute top-4 right-4 z-1000">
             <Button size="sm" onClick={centerMap}>
               Center on Me
             </Button>
