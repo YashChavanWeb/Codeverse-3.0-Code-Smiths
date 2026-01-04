@@ -1,82 +1,96 @@
-import React, { useState } from "react";
-import LiveMap, { vendors as allVendors } from "../../components/LiveMap";
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+import LiveMap from "../../components/LiveMap";
 import { Input, Button, Card } from "../../components/ui";
 import { List } from "lucide-react";
-import logo from '../../assets/Images/logo.png';
+import logo from "../../assets/Images/logo.png";
 
 const LiveLocationMap = () => {
   const [search, setSearch] = useState("");
+  const [allVendors, setAllVendors] = useState([]);
   const [filteredVendors, setFilteredVendors] = useState([]);
+  const [defaultVendors, setDefaultVendors] = useState([]); // Stores first 3 from API
   const [loading, setLoading] = useState(false);
   const [showList, setShowList] = useState(false);
 
-  const handleSearch = () => {
-    setLoading(true);
+  useEffect(() => {
+    const fetchVendors = async () => {
+      setLoading(true);
+      try {
+        const res = await axios.get(
+          "http://localhost:3000/api/v1/products/vendors-with-products"
+        );
+        const vendors = res.data.data;
+        setAllVendors(vendors);
 
-    setTimeout(() => {
-      const results = allVendors.filter((v) =>
-        v.items?.some((item) =>
-          item.name.toLowerCase().includes(search.toLowerCase())
-        )
-      );
-      setFilteredVendors(results);
-      setLoading(false);
-      setShowList(true);
-    }, 400);
+        // Replace static names: Use first 3 vendors from fetched data as default
+        const initial = vendors.slice(0, 3);
+        setDefaultVendors(initial);
+        setFilteredVendors(initial);
+      } catch (err) {
+        console.error("Vendor fetch failed", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchVendors();
+  }, []);
+
+  const handleSearch = () => {
+    if (!search.trim()) {
+      setFilteredVendors(defaultVendors);
+      return;
+    }
+
+    setLoading(true);
+    const results = allVendors
+      .map((v) => ({
+        ...v,
+        items: v.items.filter((i) =>
+          i.name.toLowerCase().includes(search.toLowerCase())
+        ),
+      }))
+      .filter((v) => v.items.length > 0);
+
+    setFilteredVendors(results);
+    setShowList(true);
+    setLoading(false);
   };
 
   return (
     <div className="w-full h-screen flex flex-col">
-      {/* Search bar */}
-      <div className=" md:w-1/2 p-3 flex gap-2 mt-15 md:mt-20 md:ml-10">
+      <div className="md:w-1/2 p-3 flex gap-2 mt-20 md:ml-10">
         <Input
           placeholder="Search a fruit or vegetable..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              handleSearch();
-            }
-          }}
+          onKeyDown={(e) => e.key === "Enter" && handleSearch()}
         />
-
-        <Button size='sm' onClick={handleSearch}>Search</Button>
+        <Button size="sm" onClick={handleSearch}>Search</Button>
       </div>
 
-      {/* Main layout */}
-      <div className="flex flex-1 relative overflow-hidden h-1/2">
+      <div className="flex flex-1 relative overflow-hidden">
         <div className="flex-1">
-          <LiveMap search={search} filteredVendors={filteredVendors} />
+          <LiveMap filteredVendors={filteredVendors} />
         </div>
 
         <div className="hidden md:block w-1/3 bg-white overflow-y-auto mx-10 mb-10">
           <VendorList vendors={filteredVendors} loading={loading} />
         </div>
 
-        <div
-          className={`fixed bottom-0 left-0 right-0 bg-white rounded-t-2xl shadow-xl transform transition-transform duration-300 md:hidden
-            ${showList ? "translate-y-0" : "translate-y-full"}`}
-          style={{ height: "65vh" }}
-        >
-          <div className="p-3 border-b flex justify-between items-center">
-            <div className="font-semibold">Vendors</div>
+        <div className={`fixed bottom-0 left-0 right-0 bg-white rounded-t-2xl shadow-xl transition-transform duration-300 md:hidden z-[2000] ${showList ? "translate-y-0" : "translate-y-full"}`} style={{ height: "65vh" }}>
+          <div className="p-3 border-b flex justify-between">
+            <span className="font-semibold">Vendors</span>
             <Button size="sm" onClick={() => setShowList(false)}>Close</Button>
           </div>
-
-          <div className="overflow-y-auto h-full p-3">
+          <div className="p-3 overflow-y-auto">
             <VendorList vendors={filteredVendors} loading={loading} />
           </div>
         </div>
 
         {filteredVendors.length > 0 && !showList && (
-          <Button
-            variant='secondary'
-            size='sm'
-            onClick={() => setShowList(true)}
-            className="md:hidden fixed bottom-18 left-1/2 -translate-x-1/2 px-4 py-2 rounded-full flex items-center gap-2 shadow-lg"
-          >
-            <List size={18} />
-            List Vendors
+          <Button size="sm" variant="secondary" className="md:hidden fixed bottom-20 left-1/2 -translate-x-1/2 z-[1000]" onClick={() => setShowList(true)}>
+            <List size={18} /> List Vendors
           </Button>
         )}
       </div>
@@ -84,63 +98,30 @@ const LiveLocationMap = () => {
   );
 };
 
-export default LiveLocationMap;
-
 const VendorList = ({ vendors, loading }) => {
-  const handleAddToBasket = (vendor, item) => {
-    console.log("Added to basket:", {
-      vendor: vendor.name,
-      item,
-    });
-
-    // later:
-    // dispatch(addToCart({ vendorId, item }))
-  };
-
-  if (loading)
-    return <div className="text-center text-gray-500">Searching…</div>;
-
-  if (!vendors.length)
-    return <div className="text-center text-gray-400">
-      <img src={logo} alt="SmartVeggie" className="mx-auto w-20 h-20" />
-      <span>No vendors found</span></div>;
-
+  if (loading) return <div className="text-center">Searching…</div>;
+  if (!vendors.length) return (
+    <div className="text-center text-gray-400">
+      <img src={logo} className="mx-auto w-20" alt="logo" />
+      No vendors found
+    </div>
+  );
   return (
-    <div className="flex flex-col gap-3 mb-30">
-      <span className="text-xl font-bold">Vendors List</span>
-
-      {vendors.map((v, idx) => (
-        <Card key={idx} variant="subtle" className="px-6 py-4">
-          <div className="font-semibold mb-2">{v.name}</div>
-
-          {v.items.map((item, i) => (
-            <div
-              key={i}
-              className="flex items-center justify-between gap-3 mt-3"
-            >
-              <div className="flex justify-around items-center gap-3">
-                <img
-                  src={item.img}
-                  alt={item.name}
-                  className="w-10 h-10 rounded"
-                />
-
-                <div className="text-sm">
-                  <div className="italic px-2">{item.name}</div>
-                  <div className="bg-green-800/30 px-2 py-1 mt-2 rounded-full ">
-                    ₹{item.price}/{item.unit}
-                  </div>
+    <div className="flex flex-col gap-3 mb-20">
+      <span className="text-xl font-bold">Vendors</span>
+      {vendors.map((v) => (
+        <Card key={v._id} className="px-6 py-4">
+          <div className="font-semibold">{v.name}</div>
+          {v.items.map((item) => (
+            <div key={item._id} className="flex justify-between mt-3">
+              <div className="flex gap-3 items-center">
+                <img src={item.imageUrl} className="w-10 h-10 rounded" alt={item.name} />
+                <div>
+                  <div>{item.name}</div>
+                  <div className="text-sm text-gray-500">₹{item.price}/{item.unit}</div>
                 </div>
               </div>
-
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => handleAddToBasket(v, item)}
-                className='scale-80 sm:scale-90 translate-x-6 md:translate-x-0'
-              >
-                Add to Basket
-              </Button>
+              <Button size="sm" variant="ghost">Add</Button>
             </div>
           ))}
         </Card>
@@ -148,3 +129,5 @@ const VendorList = ({ vendors, loading }) => {
     </div>
   );
 };
+
+export default LiveLocationMap;

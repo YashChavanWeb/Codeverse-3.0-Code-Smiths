@@ -135,10 +135,10 @@ const stopListening = async () => {
   };
 
   return (
-    <div className="min-h-screen bg-background-alt flex items-center justify-center px-4 py-6">
+    <div className="min-h-screen flex items-center justify-center px-4 py-6">
       <div className="w-full max-w-2xl">
         <Card>
-          <CardHeader>
+          <CardHeader className="bg-linear-to-br from-green-50/80 via-green-600/20 to green-50/80">
             <h2 className="text-2xl font-semibold">Voice Product Entry</h2>
             <p className="text-sm text-foreground-muted mt-1">
               Speak in English / Hindi / Marathi

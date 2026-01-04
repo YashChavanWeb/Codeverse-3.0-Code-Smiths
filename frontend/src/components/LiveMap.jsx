@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef } from "react";
 import { MapContainer, TileLayer, Marker, Circle, Popup } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -24,137 +24,14 @@ const vendorIcon = new L.Icon({
   popupAnchor: [1, -34],
 });
 
-export const vendors = [
-  {
-    name: "Local Grocery Store",
-    lat: 19.3863,
-    lng: 72.8289,
-    items: [
-      {
-        name: "Tomato",
-        unit: "kg",
-        price: 40,
-        img: "https://images.unsplash.com/photo-1600781441748-3d8d6e7ab6fc?auto=format&fit=crop&w=50&q=80",
-      },
-    ],
-  },
-  {
-    name: "Corner Coffee Shop",
-    lat: 19.3850,
-    lng: 72.8290,
-    items: [
-      {
-        name: "Tomato",
-        unit: "kg",
-        price: 120,
-        img: "https://images.unsplash.com/photo-1606788075761-5760c6b9ff06?auto=format&fit=crop&w=50&q=80",
-      },
-    ],
-  },
-  {
-    name: "Fresh Fruits Stall",
-    lat: 19.3860,
-    lng: 72.8275,
-    items: [
-      {
-        name: "Apple",
-        unit: "dozen",
-        price: 60,
-        img: "https://images.unsplash.com/photo-1567306226416-28f0efdc88ce?auto=format&fit=crop&w=50&q=80",
-      },
-    ],
-  },
-  {
-    name: "Pharmacy Plus",
-    lat: 19.3840,
-    lng: 72.8280,
-    items: [
-      {
-        name: "Tomato",
-        unit: "kg",
-        price: 80,
-        img: "https://images.unsplash.com/photo-1606788075761-5760c6b9ff06?auto=format&fit=crop&w=50&q=80",
-      },
-    ],
-  },
-  {
-    name: "Supermart",
-    lat: 19.3890,
-    lng: 72.8320,
-    items: [
-      {
-        name: "Tomato",
-        unit: "kg",
-        price: 30,
-        img: "https://images.unsplash.com/photo-1600781441748-3d8d6e7ab6fc?auto=format&fit=crop&w=50&q=80",
-      },
-    ],
-  },
-  {
-    name: "Bakery Delight",
-    lat: 19.3830,
-    lng: 72.8240,
-    items: [
-      {
-        name: "Apple",
-        unit: "kg",
-        price: 50,
-        img: "https://images.unsplash.com/photo-1567306226416-28f0efdc88ce?auto=format&fit=crop&w=50&q=80",
-      },
-    ],
-  },
-  {
-    name: "Vishal Mega Mart",
-    lat: 19.3800,
-    lng: 72.8300,
-    items: [
-      {
-        name: "Tomato",
-        unit: "kg",
-        price: 150,
-        img: "https://images.unsplash.com/photo-1600781441748-3d8d6e7ab6fc?auto=format&fit=crop&w=50&q=80",
-      },
-    ],
-  },
-];
+
 
 const RADIUS = 500; // meters
 const MAX_ACCURACY = 20; // meters
 
-export default function LiveMap({ search = "", filteredVendors = [] }) {
-  const [userPos, setUserPos] = useState(null);
-  const [error, setError] = useState(null);
+export default function LiveMap({ filteredVendors = [] }) {
+  const [userPos] = useState([19.3858397, 72.8285238]);
   const mapRef = useRef(null);
-
-  useEffect(() => {
-    if (!navigator.geolocation) {
-      setError("Geolocation is not supported by your browser");
-      return;
-    }
-
-    // Restore last known location
-    const stored = localStorage.getItem("userLocation");
-    if (stored) setUserPos(JSON.parse(stored));
-
-    const watcher = navigator.geolocation.watchPosition(
-      (position) => {
-        const { latitude, longitude, accuracy } = position.coords;
-
-        if (accuracy <= MAX_ACCURACY) {
-          const coords = [latitude, longitude];
-          setTimeout(() => setUserPos(coords), 0);
-          localStorage.setItem("userLocation", JSON.stringify(coords));
-        }
-      },
-      (err) => {
-        setError("Unable to retrieve your location. Please enable GPS.");
-        console.error(err);
-      },
-      { enableHighAccuracy: true }
-    );
-
-    return () => navigator.geolocation.clearWatch(watcher);
-  }, []);
 
   const centerMap = () => {
     const map = mapRef.current;
@@ -162,10 +39,8 @@ export default function LiveMap({ search = "", filteredVendors = [] }) {
       map.flyTo(userPos, 17, { animate: true, duration: 1.5 });
   };
 
-  const vendorsToShow = search && filteredVendors.length > 0 ? filteredVendors : [];
+  const vendorsToShow = filteredVendors.length > 0 ? filteredVendors : [];
 
-  if (error)
-    return <div className="p-10 text-center text-red-500">{error}</div>;
   if (!userPos)
     return <div className="p-10 text-center text-gray-500">Locating you...</div>;
 
@@ -226,7 +101,7 @@ export default function LiveMap({ search = "", filteredVendors = [] }) {
                       {v.items.map((item, i) => (
                         <div key={i} className="flex items-center gap-2 mt-1 w-50">
                           <img
-                            src={item.img}
+                            src={item.imageUrl || item.img}
                             alt={item.name}
                             className="w-15 h-15 rounded mr-5"
                           />
@@ -256,7 +131,7 @@ export default function LiveMap({ search = "", filteredVendors = [] }) {
 }
 
 // --- Haversine Formula ---
-function getDistanceFromLatLonInMeters(lat1, lon1, lat2, lon2) {
+export function getDistanceFromLatLonInMeters(lat1, lon1, lat2, lon2) {
   const R = 6371000; // meters
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
   const dLon = ((lon2 - lon1) * Math.PI) / 180;

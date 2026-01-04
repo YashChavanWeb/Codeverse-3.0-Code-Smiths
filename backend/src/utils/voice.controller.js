@@ -1,8 +1,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-
 export const parseVoiceInput = async (req, res) => {
+  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
   try {
     console.log("VOICE PARSE HIT");
     const { transcript, language } = req.body;
@@ -57,11 +56,16 @@ User speech: "${transcript}"
 
     const result = await model.generateContent(prompt);
     const rawText = result.response.text();
-    console.log("Gemini processed transcript");
+    console.log("Gemini processed transcript:", rawText);
 
     let parsed;
     try {
-      parsed = JSON.parse(rawText);
+      // Use regex to find the first JSON object in the response
+      const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        throw new Error("No JSON found in response");
+      }
+      parsed = JSON.parse(jsonMatch[0]);
     } catch (err) {
       console.error("❌ Gemini returned invalid JSON:", rawText);
       return res.status(500).json({

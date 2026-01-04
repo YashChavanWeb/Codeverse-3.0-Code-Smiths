@@ -1,5 +1,7 @@
-import express from "express";
 import dotenv from "dotenv";
+dotenv.config();
+
+import express from "express";
 import connectDB from "./src/db/db.js";
 import authRoutes from "./src/auth/authRoutes.js";
 import productRoutes from "./src/products/productRoutes.js";
@@ -11,12 +13,10 @@ import verifyUser from "./src/auth/authMiddleware.js";
 import { parseVoiceInput } from "./src/utils/voice.controller.js";
 import vendorLeaderboardRoutes from "./src/vendor/vendorLeaderboardRoutes.js" ; 
 
-// Function to log messages
 const logRequest = (message) => {
   console.log(`[LOG]: ${message}`);
 };
 
-dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -53,7 +53,7 @@ app.use("/api/v1/vendors", vendorLeaderboardRoutes);
    ================================ */
 app.post(
   "/api/v1/voice/parse",
-  verifyUser,          // ✅ FIXED HERE
+  verifyUser, // ✅ FIXED HERE
   parseVoiceInput
 );
 

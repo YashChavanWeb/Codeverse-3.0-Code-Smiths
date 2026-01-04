@@ -3,12 +3,13 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
 // UI Components
-import { Button } from "../../components/ui";
+import { Button, CardHeader } from "../../components/ui";
 import Leaderboard from "../../components/Leaderboard";
 import VendorLeaderboard from "../../components/VendorLeaderboard";
 
 // Context
 import { useAuth } from "../../context/AuthContext";
+import { Card } from "../../components/ui";
 
 const VendorDashboard = () => {
   const navigate = useNavigate();

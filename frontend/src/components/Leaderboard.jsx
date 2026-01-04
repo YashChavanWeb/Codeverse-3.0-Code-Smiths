@@ -87,6 +87,8 @@ const LeaderBoard = ({ fetchUrl, streamUrl, title = "Leaderboard", pageSize = 5 
 
   return (
     <div className="p-4 md:p-6 w-full max-h-[calc(100vh-120px)] overflow-y-auto">
+      <section className="flex flex-row justify-between">
+
       <h2 className="text-2xl font-bold mb-6">{title}</h2>
 
       {/* FILTER BAR */}
@@ -139,6 +141,7 @@ const LeaderBoard = ({ fetchUrl, streamUrl, title = "Leaderboard", pageSize = 5 
           Clear
         </button>
       </div>
+      </section>
 
       {/* TABLE */}
       <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100">

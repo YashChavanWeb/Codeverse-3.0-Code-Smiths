@@ -119,7 +119,41 @@
                 </ProtectedRoute>
               }
             />
+            {/* User Protected Routes */}
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute roles={["user"]}>
+                  <Dashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/basket-estimator"
+              element={
+                <ProtectedRoute roles={["user"]}>
+                  <BasketEstimator />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/location-vendors"
+              element={
+                <ProtectedRoute roles={["user"]}>
+                  <LocationLiveMap />
+                </ProtectedRoute>
+              }
+            />
 
+            {/* Common Protected Routes */}
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute roles={["user", "vendor"]}>
+                  <Profile />
+                </ProtectedRoute>
+              }
+            />
             {/* Common Protected Routes */}
             <Route
               path="/profile"

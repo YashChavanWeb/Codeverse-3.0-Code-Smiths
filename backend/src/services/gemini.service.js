@@ -1,8 +1,9 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
-
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+import dotenv from "dotenv";
+dotenv.config();
 
 export const parseVoiceInput = async (req, res) => {
+  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
   try {
     const { transcript, language } = req.body;
 
@@ -36,7 +37,7 @@ Speech:
 `;
 
     const model = genAI.getGenerativeModel({
-      model: "gemini-2.5-pro",
+      model: "gemini-2.5-flash",
     });
 
     const result = await model.generateContent(prompt);
