@@ -67,8 +67,8 @@ const Drawer = ({ open, onToggle, role: propRole }) => {
       { label: "Dashboard", icon: <HomeIcon size={20} />, path: "/vendor" },
       { label: "Add Products", icon: <PlusSquare size={20} />, path: "/vendor/add" },
       { label: "Manage Products", icon: <Tag size={20} />, path: "/vendor/products" },
-      { label: "Market Insights", icon: <BarChart2 size={20} />, path: "/vendor/compare" },
-      { label: "Voice Updates", icon: <Mic size={20} />, path: "/vendor/add/voice" },
+      // { label: "Market Insights", icon: <BarChart2 size={20} />, path: "/vendor/compare" },
+      // { label: "Voice Updates", icon: <Mic size={20} />, path: "/vendor/add/voice" },
       { 
         label: "Notifications", 
         icon: <Bell size={20} />, 
