@@ -94,7 +94,7 @@ const BasketEstimator = () => {
   return (
     <div className="w-full mx-auto px-10 py-10">
       {/* HEADER */}
-      <div className="mb-10 flex justify-between items-start">
+      <div className="mb-10 flex justify-between items-start -mt-8 md:mt-18">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Basket Estimator</h1>
           <p className="text-gray-500 mt-1">
@@ -158,9 +158,9 @@ const BasketEstimator = () => {
 
           <div className="mt-8 w-full">
             {basket.length === 0 ? (
-              <div className="flex flex-col justify-center items-center text-center p-8 bg-gray-50/70 rounded-2xl border-2 border-dashed border-gray-400 mx-auto">
-                <img src={logo} className="w-15 h-15"></img>
-                <p className="text-center text-gray-400 italic py-10">Your estimation basket is empty</p>
+                <div className="flex flex-col justify-center items-center text-center p-8 bg-gray-50/70 rounded-2xl border-2 border-dashed border-gray-400 mx-auto">
+                      <img src={logo} className="w-15 h-15"></img>
+              <p className="text-center text-gray-400 italic py-10">Your estimation basket is empty</p>
               </div>
             ) : (
               <>

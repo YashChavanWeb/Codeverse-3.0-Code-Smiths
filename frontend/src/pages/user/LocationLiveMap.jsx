@@ -4,16 +4,16 @@ import LiveMap from "../../components/LiveMap";
 import { Input, Button, Card } from "../../components/ui";
 import { List, ChevronDown, ChevronUp } from "lucide-react";
 import logo from "../../assets/Images/logo.png";
+import { useBasket } from "../../context/BasketContext";
 
 const LiveLocationMap = () => {
+  const { addToBasket } = useBasket(); // <-- Basket context
   const [search, setSearch] = useState("");
   const [allVendors, setAllVendors] = useState([]);
   const [filteredVendors, setFilteredVendors] = useState([]);
   const [defaultVendors, setDefaultVendors] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showList, setShowList] = useState(false);
-
-  // Real-time user location
   const [userLocation, setUserLocation] = useState({ lat: 0, lng: 0 });
 
   // Fetch vendors
@@ -39,13 +39,9 @@ const LiveLocationMap = () => {
     fetchVendors();
   }, []);
 
-  // Real-time geolocation tracking (once on mount)
+  // Geolocation tracking
   useEffect(() => {
-    if (!navigator.geolocation) {
-      console.warn("Geolocation is not supported by your browser");
-      return;
-    }
-
+    if (!navigator.geolocation) return;
     const id = navigator.geolocation.watchPosition(
       (position) => {
         setUserLocation({
@@ -56,7 +52,6 @@ const LiveLocationMap = () => {
       (err) => console.error("Failed to get location", err),
       { enableHighAccuracy: true, maximumAge: 10000, timeout: 5000 }
     );
-
     return () => navigator.geolocation.clearWatch(id);
   }, []);
 
@@ -73,7 +68,6 @@ const LiveLocationMap = () => {
       setFilteredVendors(defaultVendors);
       return;
     }
-
     setLoading(true);
 
     const results = allVendors
@@ -93,7 +87,7 @@ const LiveLocationMap = () => {
   return (
     <div className="w-full min-h-screen flex flex-col overflow-hidden">
       {/* Search */}
-      <div className="md:w-1/2 p-3 flex gap-2 mt-4 md:ml-10">
+      <div className="md:w-1/2 p-3 flex gap-2 md:ml-10 -mt-2 md:mt-18">
         <Input
           placeholder="Search a fruit or vegetable..."
           value={search}
@@ -109,15 +103,18 @@ const LiveLocationMap = () => {
       <div className="flex flex-1 relative overflow-hidden">
         {/* Map */}
         <div className="flex-1">
-          <LiveMap
-            filteredVendors={filteredVendors}
-            userLocation={userLocation}
-          />
+          <LiveMap filteredVendors={filteredVendors} userLocation={userLocation} />
         </div>
 
         {/* Desktop Vendor List */}
         <div className="hidden md:block w-1/3 bg-white mx-10 mb-10 h-full overflow-y-auto overscroll-contain">
-          <VendorList vendors={filteredVendors} loading={loading} search={search} />
+          <VendorList
+            vendors={filteredVendors}
+            loading={loading}
+            search={search}
+            addToBasket={addToBasket}
+            closeDrawer={() => setShowList(false)}
+          />
         </div>
 
         {/* Mobile Bottom Sheet */}
@@ -134,7 +131,13 @@ const LiveLocationMap = () => {
             </Button>
           </div>
           <div className="p-3 h-full overflow-y-auto overscroll-contain">
-            <VendorList vendors={filteredVendors} loading={loading} search={search} />
+            <VendorList
+              vendors={filteredVendors}
+              loading={loading}
+              search={search}
+              addToBasket={addToBasket}
+              closeDrawer={() => setShowList(false)}
+            />
           </div>
         </div>
 
@@ -155,7 +158,7 @@ const LiveLocationMap = () => {
 };
 
 // VendorList Component
-const VendorList = ({ vendors, loading, search = "" }) => {
+const VendorList = ({ vendors, loading, search = "", addToBasket, closeDrawer }) => {
   if (loading) return <div className="text-center">Searching…</div>;
 
   if (!vendors.length)
@@ -195,7 +198,18 @@ const VendorList = ({ vendors, loading, search = "" }) => {
                   </div>
                 </div>
               </div>
-              <Button size="sm" variant="ghost">
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => {
+                  addToBasket({
+                    _id: item._id,
+                    name: item.name,
+                    price: item.price,
+                  });
+                  closeDrawer(); // auto-close mobile drawer
+                }}
+              >
                 Add
               </Button>
             </div>
@@ -226,11 +240,7 @@ const VendorList = ({ vendors, loading, search = "" }) => {
             <div className="flex justify-between items-center">
               <div className="font-semibold text-lg">{v.name}</div>
               {v.items.length > 0 && (
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => toggleVendor(v._id)}
-                >
+                <Button size="sm" variant="ghost" onClick={() => toggleVendor(v._id)}>
                   {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
                 </Button>
               )}
@@ -253,7 +263,18 @@ const VendorList = ({ vendors, loading, search = "" }) => {
                         </div>
                       </div>
                     </div>
-                    <Button size="sm" variant="ghost">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => {
+                        addToBasket({
+                          _id: item._id,
+                          name: item.name,
+                          price: item.price,
+                        });
+                        closeDrawer();
+                      }}
+                    >
                       Add
                     </Button>
                   </div>

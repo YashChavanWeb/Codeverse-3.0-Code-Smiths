@@ -1,60 +1,60 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { Plus, List } from "lucide-react";
 import axios from "axios";
 
 // UI Components
-import { Button } from "../../components/ui";
-import VendorLeaderboard from "../../components/VendorLeaderboard";
-
-// Context
+import Leaderboard from "../../components/Leaderboard";
 import { useAuth } from "../../context/AuthContext";
 
 const VendorDashboard = () => {
   const navigate = useNavigate();
   const { token } = useAuth();
 
-  // Local State
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [vendors, setVendors] = useState([]); // To store vendor list
+  const [selectedVendor, setSelectedVendor] = useState(null); // To store selected vendor
 
-  // API Endpoints
+  // Endpoints
   const PROFILE_URL = `${import.meta.env.VITE_BACKEND_URL}/auth/me`;
+  const VENDOR_PRODUCTS_FETCH_URL = `${import.meta.env.VITE_BACKEND_URL}/products/location`;
   const PRODUCTS_STREAM_URL = `${import.meta.env.VITE_BACKEND_URL}/products/stream`;
-  const VENDOR_LEADERBOARD_URL = `${import.meta.env.VITE_BACKEND_URL}/products/vendor-leaderboard`;
+  const VENDOR_VENDORS_WITH_PRODUCTS_URL = `${import.meta.env.VITE_BACKEND_URL}/products/vendors-with-products`;
 
-  /* ---------------- FETCH USER PROFILE ---------------- */
   useEffect(() => {
     const fetchUserProfile = async () => {
-      if (!token) {
-        setLoading(false);
-        return;
-      }
-
+      if (!token) return;
       try {
         setLoading(true);
         const response = await axios.get(PROFILE_URL, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         });
         setUserData(response.data.user);
       } catch (err) {
-        console.error("Error fetching vendor profile:", err);
-        setError("Failed to load vendor profile.");
+        console.error("Error fetching profile:", err);
       } finally {
         setLoading(false);
       }
     };
-
     fetchUserProfile();
   }, [token, PROFILE_URL]);
 
-  /* ---------------- DATA PREP ---------------- */
-  const username = userData?.username || "Vendor";
-  const userInitial = username.charAt(0).toUpperCase();
-  const storeDisplayName = userData?.storeName || "your store";
-  const userCity = userData?.location?.address || userData?.location || "Unknown Location";
+  useEffect(() => {
+    const fetchVendors = async () => {
+      try {
+        const response = await axios.get(VENDOR_VENDORS_WITH_PRODUCTS_URL);
+        setVendors(response.data.data);
+      } catch (err) {
+        console.error("Error fetching vendors:", err);
+      }
+    };
+    fetchVendors();
+  }, []);
+
+  const handleVendorChange = (e) => {
+    setSelectedVendor(e.target.value);
+  };
 
   if (loading) {
     return (
@@ -64,79 +64,72 @@ const VendorDashboard = () => {
     );
   }
 
+  const username = userData?.username || "Vendor";
+
   return (
-    <div className="p-4 md:p-8 max-w-7xl mx-auto w-full space-y-8 mb-20">
-
-      {/* 1. Welcome Section (Vendor Styled) */}
-      <section className="flex flex-col md:flex-row items-center justify-between gap-6 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-        <div className="flex items-center gap-5">
-          <div className="w-16 h-16 bg-gradient-to-br from-green-400 to-green-600 text-white rounded-2xl flex items-center justify-center text-2xl font-bold shadow-lg transform -rotate-3">
-            {userInitial}
-          </div>
-          <div>
-            <h2 className="text-2xl font-bold text-gray-800">
-              Welcome back, {username}!
-            </h2>
-            <p className="text-gray-500">
-              Managing <span className="font-medium text-green-600">{storeDisplayName}</span> • {userCity}
-            </p>
-          </div>
+    <div className="min-h-screen bg-gray-50 p-4 md:p-8 max-w-7xl mx-auto">
+      {/* Simple Clean Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 mt-5 md:mt-18">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Store Dashboard</h1>
+          <p className="text-gray-500 font-medium">Welcome back, {username}</p>
         </div>
 
-        <div className="flex gap-3 w-full md:w-auto">
-          <Button
-            onClick={() => navigate("/add-product")}
-            className="bg-green-600 hover:bg-green-700 text-white px-6 shadow-md"
-          >
-            + Add Product
-          </Button>
-          <Button
+        <div className="flex items-center gap-3">
+          <button
             onClick={() => navigate("/my-products")}
-            variant="outline"
-            className="border-gray-200 hover:bg-gray-50"
+            className="flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition-all shadow-sm"
           >
-            My Inventory
-          </Button>
+            <List size={18} />
+            My Products
+          </button>
+          <button
+            onClick={() => navigate("/add-product")}
+            className="flex items-center gap-2 px-5 py-2.5 bg-green-600 text-white rounded-xl font-semibold hover:bg-green-700 transition-all shadow-md shadow-green-200"
+          >
+            <Plus size={18} />
+            Add New
+          </button>
         </div>
-      </section>
-
-      {/* 2. Vendor Leaderboard Section */}
-      <div className="grid grid-cols-1 gap-8">
-        <section className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden w-full">
-          <div className="p-5 border-b bg-gray-50/50 flex justify-between items-center">
-            <div>
-              <h3 className="font-bold text-gray-800 text-lg">Market Standings</h3>
-              <p className="text-xs text-gray-500">How your store compares to others in {userCity}</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-              </span>
-              <span className="text-green-700 text-xs font-semibold tracking-wide uppercase">
-                Live Area Rankings
-              </span>
-            </div>
-          </div>
-
-          <div className="w-full">
-            <VendorLeaderboard
-              title="Regional Vendor Rankings"
-              fetchUrl={VENDOR_LEADERBOARD_URL}
-              streamUrl={PRODUCTS_STREAM_URL}
-              pageSize={10}
-              showCityFilter={true}
-            />
-          </div>
-        </section>
       </div>
 
-      {/* 3. Error Feedback */}
-      {error && (
-        <div className="p-4 bg-red-50 border border-red-100 text-red-600 rounded-xl text-sm flex items-center gap-2">
-          <span className="text-lg">⚠️</span> {error}
-        </div>
-      )}
+      {/* Vendor Dropdown for Filter */}
+      <div className="mb-4">
+        <label htmlFor="vendor-select" className="block text-gray-700 font-medium mb-2">
+          Select Vendor
+        </label>
+        <select
+          id="vendor-select"
+          className="w-full p-2.5 border border-gray-300 rounded-md"
+          onChange={handleVendorChange}
+          value={selectedVendor || ""}
+        >
+          <option value="">All Vendors</option>
+          {vendors.map((vendor) => (
+            <option key={vendor._id} value={vendor._id}>
+              {vendor.name}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* Main Leaderboard Table Container */}
+      <div className="bg-white rounded-[1.5rem] shadow-xl shadow-gray-200/50 border border-gray-100 overflow-hidden">
+
+        <Leaderboard
+          title="Product Inventory"
+          fetchUrl={`${import.meta.env.VITE_BACKEND_URL}/products/vendor/my-products`} // Use vendor filter URL
+          streamUrl={PRODUCTS_STREAM_URL}
+          pageSize={10}
+          vendorId={selectedVendor}
+        />
+      </div>
+
+      <div className="mt-8 text-center">
+        <p className="text-xs text-gray-400 uppercase tracking-widest font-bold">
+          {/* Real-time tracking active */}
+        </p>
+      </div>
     </div>
   );
 };

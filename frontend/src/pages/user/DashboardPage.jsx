@@ -3,7 +3,7 @@
   import axios from "axios";
 
   // UI Components
-  import { Button } from "../../components/ui";
+  import { Button, Card } from "../../components/ui";
   import Leaderboard from "../../components/Leaderboard";
 
   // Context
@@ -65,12 +65,12 @@
     }
 
     return (
-      <div className="p-4 md:p-8 max-w-7xl mx-auto w-full space-y-8 mb-20">
+      <div className="p-4 md:p-8 max-w-7xl mx-auto w-full space-y-8 mb-20 mt-0 md:mt-10">
 
         {/* 1. Welcome Section */}
-        <section className="flex flex-col md:flex-row items-center justify-between gap-6 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+        <Card variant="glass" className="flex flex-col md:flex-row items-center justify-between gap-6 bg-white p-6 rounded-2xl shadow-sm border-2 mt-5">
           <div className="flex items-center gap-5">
-            <div className="w-16 h-16 bg-gradient-to-br from-green-400 to-green-600 text-white rounded-2xl flex items-center justify-center text-2xl font-bold shadow-lg transform -rotate-3">
+            <div className="w-16 h-16 bg-linear-to-br from-green-400 to-green-600 text-white rounded-2xl flex items-center justify-center text-2xl font-bold shadow-lg transform -rotate-3">
               {userInitial}
             </div>
             <div>
@@ -94,16 +94,16 @@
                 Manage Inventory
               </Button>
             )}
-            <Button onClick={() => navigate("/profile")} variant="outline">
+            <Button onClick={() => navigate("/profile")} variant="ghost">
               Profile Settings
             </Button>
           </div>
-        </section>
+        </Card>
 
         {/* 2. Leaderboard Section */}
         <div className="grid grid-cols-1 gap-8">
           <section className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden w-full">
-            <div className="p-5 border-b bg-gray-50/50 flex justify-between items-center">
+            <div className="p-5 border-b bg-gray-50/50 flex justify-between items-center bg-linear-to-br from-green-50/80 via-green-600/20 to green-50/80">
               <div>
                 <h3 className="font-bold text-gray-800">Market Leaderboard</h3>
                 <p className="text-xs text-gray-500">Live rankings based on stock health and availability</p>
