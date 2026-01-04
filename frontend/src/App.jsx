@@ -46,7 +46,7 @@ const Navbar = ({ drawerOpen }) => {
       }`}
     >
       <img src={logo} className="w-15 h-15" alt="logo" />
-      <h1 className="flex-1 text-xl font-semibold truncate text-white">SmartVegie</h1>
+      <h1 className="flex-1 text-xl font-semibold truncate text-white">SmartVegis</h1>
       <div className="ml-4">
         {user?.name && <span className="text-sm">{user.name}</span>}
       </div>
