@@ -3,10 +3,8 @@ import { User } from "../auth/authModel.js";
 import productEvents from "../utils/events.js";
 import { addToQueue } from "../queue/productQueue.js";
 
-// GET /location
 const getProductsByLocation = async (req, res) => {
   const {
-    city,
     category,
     minPrice,
     maxPrice,
@@ -18,16 +16,8 @@ const getProductsByLocation = async (req, res) => {
   } = req.query;
 
   try {
-    /* 
-    const vendors = await User.find({
-      location: new RegExp(city, "i"),
-      role: "vendor",
-    }).select("_id");
-
-    const vendorIds = vendors.map((v) => v._id);
-    const filter = { vendor: { $in: vendorIds } };
-    */
-    const filter = {}; // Fetch all products irrespective of location for now
+    // No need to filter by location, we can fetch all products.
+    const filter = {};
 
     if (category) filter.category = category;
 
@@ -38,7 +28,6 @@ const getProductsByLocation = async (req, res) => {
     }
 
     if (stockStatus) {
-      // Updated to query nested stock.current field
       if (stockStatus === "low") filter["stock.current"] = { $gt: 0, $lt: 10 };
       else if (stockStatus === "med")
         filter["stock.current"] = { $gte: 10, $lte: 50 };
@@ -80,6 +69,7 @@ const getProductsByLocation = async (req, res) => {
   }
 };
 
+
 /* ---------- GET SINGLE ---------- */
 const getProductById = async (req, res) => {
   const product = await Product.findById(req.params.id).populate(
@@ -92,16 +82,13 @@ const getProductById = async (req, res) => {
 
 /* ---------- CREATE ---------- */
 const createProduct = async (req, res) => {
-  const { name, category, price, unit, stock, imageUrl } = req.body;
-  const finalImageUrl =
-    imageUrl || "https://via.placeholder.com/150?text=No+Image";
+  const { name, category, price, unit, stock } = req.body;
 
   const product = await Product.create({
     name,
     category,
     price,
     unit,
-    imageUrl: finalImageUrl,
     stock: { current: stock, before: 0 },
     vendor: req.user._id,
   });
@@ -110,6 +97,16 @@ const createProduct = async (req, res) => {
     type: "NEW_PRODUCT",
     product,
   });
+
+  // Create new product notification (async - don't block response)
+  setTimeout(async () => {
+    try {
+      const { createNewProductNotification } = await import("../notifications/notificationController.js");
+      await createNewProductNotification(product._id);
+    } catch (err) {
+      console.error("Error creating new product notification:", err);
+    }
+  }, 0);
 
   res.status(201).json(product);
 };
@@ -130,7 +127,7 @@ const updateProductTitle = async (req, res) => {
 
   const { name } = req.body;
 
-  // Emit immediate SSE
+  // Emit immediate SSE for real-time updates
   productEvents.emit("productUpdate", {
     type: "TITLE_UPDATE",
     product: { _id: check.product._id, name },
@@ -142,10 +139,7 @@ const updateProductTitle = async (req, res) => {
     name,
   });
 
-  res.json({
-    success: true,
-    message: "Title update queued and frontend notified",
-  });
+  res.json({ success: true, message: "Title update queued and frontend notified" });
 };
 
 const updateProductPrice = async (req, res) => {
@@ -154,8 +148,9 @@ const updateProductPrice = async (req, res) => {
     return res.status(check.status).json({ message: check.error });
 
   const { price } = req.body;
+  const oldPrice = check.product.price;
 
-  // Emit immediate SSE (optimistic update)
+  // Emit immediate SSE for real-time updates
   productEvents.emit("productUpdate", {
     type: "PRICE_UPDATE",
     product: { _id: check.product._id, price },
@@ -167,10 +162,17 @@ const updateProductPrice = async (req, res) => {
     newPrice: price,
   });
 
-  res.json({
-    success: true,
-    message: "Price update queued and frontend notified",
-  });
+  // Create price change notification (async - don't block response)
+  setTimeout(async () => {
+    try {
+      const { createPriceChangeNotification } = await import("../notifications/notificationController.js");
+      await createPriceChangeNotification(check.product._id, oldPrice, price);
+    } catch (err) {
+      console.error("Error creating price notification:", err);
+    }
+  }, 0);
+
+  res.json({ success: true, message: "Price update queued and frontend notified" });
 };
 
 const updateProductStock = async (req, res) => {
@@ -179,8 +181,9 @@ const updateProductStock = async (req, res) => {
     return res.status(check.status).json({ message: check.error });
 
   const { stock } = req.body;
+  const oldStock = check.product.stock.current;
 
-  // Emit immediate SSE
+  // Emit immediate SSE for real-time updates
   productEvents.emit("productUpdate", {
     type: "STOCK_UPDATE",
     product: { _id: check.product._id, stock: { current: stock } },
@@ -193,10 +196,17 @@ const updateProductStock = async (req, res) => {
     location: req.user.location,
   });
 
-  res.json({
-    success: true,
-    message: "Stock update queued and frontend notified",
-  });
+  // Create stock change notification (async - don't block response)
+  setTimeout(async () => {
+    try {
+      const { createStockChangeNotification } = await import("../notifications/notificationController.js");
+      await createStockChangeNotification(check.product._id, oldStock, stock);
+    } catch (err) {
+      console.error("Error creating stock notification:", err);
+    }
+  }, 0);
+
+  res.json({ success: true, message: "Stock update queued and frontend notified" });
 };
 
 const updateProductAvailable = async (req, res) => {
@@ -205,8 +215,9 @@ const updateProductAvailable = async (req, res) => {
     return res.status(check.status).json({ message: check.error });
 
   const { available } = req.body;
+  const wasAvailable = check.product.available;
 
-  // Emit immediate SSE
+  // Emit immediate SSE for real-time updates
   productEvents.emit("productUpdate", {
     type: "AVAILABILITY_UPDATE",
     product: { _id: check.product._id, available },
@@ -218,10 +229,17 @@ const updateProductAvailable = async (req, res) => {
     available,
   });
 
-  res.json({
-    success: true,
-    message: "Availability update queued and frontend notified",
-  });
+  // Create availability change notification (async - don't block response)
+  setTimeout(async () => {
+    try {
+      const { createAvailabilityChangeNotification } = await import("../notifications/notificationController.js");
+      await createAvailabilityChangeNotification(check.product._id, wasAvailable, available);
+    } catch (err) {
+      console.error("Error creating availability notification:", err);
+    }
+  }, 0);
+
+  res.json({ success: true, message: "Availability update queued and frontend notified" });
 };
 
 /* ---------- DELETE ---------- */
@@ -247,7 +265,6 @@ const getVendorsWithProducts = async (req, res) => {
       productMatch.name = new RegExp(search, "i");
     }
 
-    // Use aggregation to group products by vendor
     const vendorsWithProducts = await Product.aggregate([
       { $match: productMatch },
       {
@@ -281,7 +298,6 @@ const getVendorsWithProducts = async (req, res) => {
       },
     ]);
 
-    // Format coordinates for frontend (split string into [lat, lng])
     const formattedData = vendorsWithProducts.map((v) => {
       let lat = 0,
         lng = 0;
@@ -316,9 +332,8 @@ const getProductImageByName = async (req, res) => {
   try {
     if (!name) return res.status(400).json({ message: "Name is required" });
 
-    // Find one product with this name that HAS an imageUrl
     const product = await Product.findOne({
-      name: new RegExp(`^${name}$`, "i"), // Exact match, case-insensitive
+      name: new RegExp(`^${name}$`, "i"),
       imageUrl: { $exists: true, $ne: "" },
     }).select("imageUrl");
 
@@ -337,38 +352,27 @@ const getProductImageByName = async (req, res) => {
   }
 };
 
-
-// productController.js - Add this new function
-
-// productController.js - Update the getVendorLeaderboard function
-/// Update the getVendorLeaderboard function in productController.js
-/* ---------- VENDOR LEADERBOARD WITH DEMAND ANALYTICS ---------- */
+/* ---------- VENDOR LEADERBOARD ---------- */
 const getVendorLeaderboard = async (req, res) => {
   const { city, sortBy = "productCount", page = 1, limit = 10 } = req.query;
 
   try {
     // Match products by city if provided
     let productMatch = {};
-    let vendorIds = [];
     
     if (city) {
-      // Extract just the main city name from location (e.g., "Vasai" from "Vasai West, Mumbai")
       const vendorsInCity = await User.find({
-        $or: [
-          { "location.address": new RegExp(city, "i") },
-          { "location.city": new RegExp(city, "i") },
-          { location: new RegExp(city, "i") }
-        ],
+        location: new RegExp(city, "i"),
         role: "vendor",
-      }).select("_id location");
+      }).select("_id");
       
-      vendorIds = vendorsInCity.map((v) => v._id);
+      const vendorIds = vendorsInCity.map((v) => v._id);
       if (vendorIds.length > 0) {
         productMatch.vendor = { $in: vendorIds };
       }
     }
 
-    // Aggregate vendor statistics with demand data
+    // Aggregate vendor statistics
     const vendorStats = await Product.aggregate([
       { $match: productMatch },
       {
@@ -381,37 +385,10 @@ const getVendorLeaderboard = async (req, res) => {
       },
       { $unwind: "$vendorDetails" },
       {
-        $lookup: {
-          from: "baskets",
-          localField: "_id",
-          foreignField: "product",
-          as: "demandData",
-        },
-      },
-      {
         $group: {
           _id: "$vendor",
           storeName: { $first: "$vendorDetails.storeName" },
-          // Extract main location only (first part before comma)
-          location: {
-            $first: {
-              $arrayElemAt: [
-                {
-                  $split: [
-                    { 
-                      $ifNull: [
-                        "$vendorDetails.location.address",
-                        "$vendorDetails.location", 
-                        "Unknown"
-                      ] 
-                    },
-                    ","
-                  ]
-                },
-                0
-              ]
-            }
-          },
+          location: { $first: "$vendorDetails.location" },
           productCount: { $sum: 1 },
           totalStock: { $sum: "$stock.current" },
           outOfStockItems: {
@@ -431,44 +408,6 @@ const getVendorLeaderboard = async (req, res) => {
               ],
             },
           },
-          // Demand Analytics
-          totalDemand: {
-            $sum: {
-              $reduce: {
-                input: "$demandData",
-                initialValue: 0,
-                in: { $add: ["$$value", "$$this.demandCount"] }
-              }
-            }
-          },
-          avgDemandIndex: {
-            $avg: {
-              $map: {
-                input: "$demandData",
-                as: "demand",
-                in: "$$demand.demandIndex"
-              }
-            }
-          },
-          highDemandProducts: {
-            $sum: {
-              $cond: [
-                {
-                  $gt: [
-                    {
-                      $ifNull: [
-                        { $arrayElemAt: ["$demandData.demandIndex", 0] },
-                        0
-                      ]
-                    },
-                    50
-                  ]
-                },
-                1,
-                0
-              ]
-            }
-          },
           avgPrice: { $avg: "$price" },
           availableProducts: {
             $sum: { $cond: [{ $eq: ["$available", true] }, 1, 0] },
@@ -479,57 +418,30 @@ const getVendorLeaderboard = async (req, res) => {
         $project: {
           _id: 1,
           storeName: 1,
-          location: { $trim: { input: "$location" } }, // Clean up whitespace
+          location: 1,
           productCount: 1,
           totalStock: 1,
           outOfStockItems: 1,
           lowStockItems: 1,
-          // Demand Metrics
-          totalDemand: { $ifNull: ["$totalDemand", 0] },
-          avgDemandIndex: { $round: [{ $ifNull: ["$avgDemandIndex", 0] }, 1] },
-          highDemandProducts: 1,
-          demandPressure: {
-            $cond: [
-              { $eq: ["$totalStock", 0] },
-              0,
-              {
-                $round: [
-                  {
-                    $multiply: [
-                      { $divide: ["$totalDemand", "$totalStock"] },
-                      100
-                    ]
-                  },
-                  1
-                ]
-              }
-            ]
-          },
-          // Stock Health
           stockHealth: {
             $cond: [
               { $eq: ["$productCount", 0] },
               0,
               {
-                $round: [
+                $subtract: [
+                  100,
                   {
-                    $subtract: [
-                      100,
+                    $multiply: [
                       {
-                        $multiply: [
-                          {
-                            $divide: [
-                              { $add: ["$outOfStockItems", "$lowStockItems"] },
-                              "$productCount",
-                            ],
-                          },
-                          100,
+                        $divide: [
+                          { $add: ["$outOfStockItems", "$lowStockItems"] },
+                          "$productCount",
                         ],
                       },
+                      100,
                     ],
                   },
-                  1
-                ]
+                ],
               },
             ],
           },
@@ -540,15 +452,10 @@ const getVendorLeaderboard = async (req, res) => {
               { $eq: ["$productCount", 0] },
               0,
               {
-                $round: [
-                  {
-                    $multiply: [
-                      { $divide: ["$availableProducts", "$productCount"] },
-                      100,
-                    ],
-                  },
-                  1
-                ]
+                $multiply: [
+                  { $divide: ["$availableProducts", "$productCount"] },
+                  100,
+                ],
               },
             ],
           },
@@ -556,7 +463,7 @@ const getVendorLeaderboard = async (req, res) => {
       },
     ]);
 
-    // Default sorting options
+    // Sorting logic
     let sortField = "productCount";
     let sortOrder = -1;
 
@@ -566,20 +473,11 @@ const getVendorLeaderboard = async (req, res) => {
     else if (sortBy === "avgPrice") {
       sortField = "avgPrice";
       sortOrder = 1;
-    } else if (sortBy === "demandPressure") {
-      sortField = "demandPressure";
-      sortOrder = -1;
-    } else if (sortBy === "totalDemand") {
-      sortField = "totalDemand";
-      sortOrder = -1;
     }
 
-    // Sort the results
     vendorStats.sort((a, b) => {
-      const aValue = a[sortField] || 0;
-      const bValue = b[sortField] || 0;
-      if (aValue < bValue) return sortOrder;
-      if (aValue > bValue) return -sortOrder;
+      if (a[sortField] < b[sortField]) return sortOrder;
+      if (a[sortField] > b[sortField]) return -sortOrder;
       return 0;
     });
 

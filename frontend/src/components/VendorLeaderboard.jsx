@@ -66,7 +66,7 @@ const VendorLeaderboard = ({
         const update = JSON.parse(event.data);
         // Refresh on any relevant updates
         if (
-          update.type === "PRODUCT_UPDATE" || 
+          update.type === "PRODUCT_UPDATE" ||
           update.type === "DEMAND_UPDATE" ||
           update.type === "DEMAND_ANALYTICS" ||
           update.type === "STOCK_UPDATE"
@@ -151,9 +151,7 @@ const VendorLeaderboard = ({
                 }}
                 className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent w-48"
               />
-              <span className="absolute left-3 top-2.5 text-gray-400">
-                📍
-              </span>
+              <span className="absolute left-3 top-2.5 text-gray-400">📍</span>
             </div>
           )}
 
@@ -238,7 +236,7 @@ const VendorLeaderboard = ({
                   </td>
                   <td className="px-4 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-gray-900">
-                      {vendor.location || "Unknown"}
+                      {vendor.location ? vendor.location.address : "Unknown"}
                     </div>
                   </td>
                   <td className="px-4 py-4 whitespace-nowrap">
@@ -246,9 +244,13 @@ const VendorLeaderboard = ({
                       {vendor.productCount}
                     </div>
                     <div className="text-xs text-gray-500">
-                      <span className="text-red-500">{vendor.outOfStockItems} out</span>
+                      <span className="text-red-500">
+                        {vendor.outOfStockItems} out
+                      </span>
                       {" • "}
-                      <span className="text-yellow-500">{vendor.lowStockItems} low</span>
+                      <span className="text-yellow-500">
+                        {vendor.lowStockItems} low
+                      </span>
                     </div>
                   </td>
                   <td className="px-4 py-4 whitespace-nowrap">
@@ -263,10 +265,16 @@ const VendorLeaderboard = ({
                                 ? "bg-orange-500"
                                 : "bg-green-500"
                             }`}
-                            style={{ width: `${Math.min(vendor.demandPressure || 0, 100)}%` }}
+                            style={{
+                              width: `${Math.min(vendor.demandPressure || 0, 100)}%`,
+                            }}
                           />
                         </div>
-                        <span className={`text-sm font-bold px-2 py-1 rounded-full ${getDemandColor(vendor.demandPressure || 0)}`}>
+                        <span
+                          className={`text-sm font-bold px-2 py-1 rounded-full ${getDemandColor(
+                            vendor.demandPressure || 0
+                          )}`}
+                        >
                           {vendor.demandPressure || 0}%
                         </span>
                       </div>
@@ -286,7 +294,9 @@ const VendorLeaderboard = ({
                               ? "bg-yellow-500"
                               : "bg-red-500"
                           }`}
-                          style={{ width: `${Math.min(vendor.stockHealth || 0, 100)}%` }}
+                          style={{
+                            width: `${Math.min(vendor.stockHealth || 0, 100)}%`,
+                          }}
                         />
                       </div>
                       <span className="ml-2 text-sm font-medium">
@@ -319,7 +329,7 @@ const VendorLeaderboard = ({
           >
             Previous
           </button>
-          
+
           {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
             let pageNum;
             if (totalPages <= 5) {
@@ -331,7 +341,7 @@ const VendorLeaderboard = ({
             } else {
               pageNum = currentPage - 2 + i;
             }
-            
+
             return (
               <button
                 key={pageNum}
@@ -346,7 +356,7 @@ const VendorLeaderboard = ({
               </button>
             );
           })}
-          
+
           <button
             onClick={() => handlePageChange(currentPage + 1)}
             disabled={currentPage === totalPages}

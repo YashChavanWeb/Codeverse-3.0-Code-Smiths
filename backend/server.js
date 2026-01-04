@@ -12,6 +12,8 @@ import startProductWorker from "./src/queue/productWorker.js";
 import verifyUser from "./src/auth/authMiddleware.js";
 import { parseVoiceInput } from "./src/utils/voice.controller.js";
 import vendorLeaderboardRoutes from "./src/vendor/vendorLeaderboardRoutes.js" ; 
+import notificationRoutes from "./src/notifications/notificationRoutes.js";
+
 
 const logRequest = (message) => {
   console.log(`[LOG]: ${message}`);
@@ -44,6 +46,10 @@ connectDB();
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/products", productRoutes);
 app.use("/api/v1/basket", basketRoutes);
+
+
+// Add this route (after other routes)
+app.use("/api/v1/notifications", notificationRoutes);
 
 
 app.use("/api/v1/vendors", vendorLeaderboardRoutes);
