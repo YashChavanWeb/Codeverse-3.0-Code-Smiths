@@ -175,7 +175,7 @@ const stopListening = async () => {
             </div>
 
             {/* Transcript */}
-            <div className="border rounded-md p-4 min-h-[100px] bg-white">
+            <div className="border rounded-md p-4min-h-[100px] bg-white">
               {transcript || <p className="text-sm text-gray-400">{EXAMPLES[language]}</p>}
             </div>
 
