@@ -505,6 +505,95 @@ const getVendorLeaderboard = async (req, res) => {
   }
 };
 
+
+/* ---------- GET VENDOR'S PRODUCTS ---------- */
+const getVendorProducts = async (req, res) => {
+  const {
+    category,
+    minPrice,
+    maxPrice,
+    stockStatus,
+    sortByPrice,
+    sortByStock,
+    available,
+    page = 1,
+    limit = 10,
+    search = "",
+  } = req.query;
+
+  try {
+    // Base filter - only products belonging to the logged-in vendor
+    const filter = { vendor: req.user._id };
+
+    // Add search filter
+    if (search) {
+      filter.name = { $regex: search, $options: "i" };
+    }
+
+    // Category filter
+    if (category) filter.category = category;
+
+    // Price range filter
+    if (minPrice || maxPrice) {
+      filter.price = {};
+      if (minPrice) filter.price.$gte = Number(minPrice);
+      if (maxPrice) filter.price.$lte = Number(maxPrice);
+    }
+
+    // Stock status filter
+    if (stockStatus) {
+      if (stockStatus === "low") filter["stock.current"] = { $gt: 0, $lt: 10 };
+      else if (stockStatus === "med")
+        filter["stock.current"] = { $gte: 10, $lte: 50 };
+      else if (stockStatus === "high") filter["stock.current"] = { $gt: 50 };
+      else if (stockStatus === "out") filter["stock.current"] = 0;
+    }
+
+    // Availability filter
+    if (available !== undefined) {
+      filter.available = available === "true";
+    }
+
+    // Sorting options
+    let sortOptions = { createdAt: -1 }; // Default: newest first
+    
+    if (sortByPrice) {
+      sortOptions.price = sortByPrice === "asc" ? 1 : -1;
+    } else if (sortByStock) {
+      sortOptions["stock.current"] = sortByStock === "asc" ? 1 : -1;
+    }
+
+    // Pagination
+    const skip = (Number(page) - 1) * Number(limit);
+    
+    // Execute query
+    const products = await Product.find(filter)
+  .populate("vendor", "storeName location") // Add this line
+  .sort(sortOptions)
+  .skip(skip)
+  .limit(Number(limit));
+
+    // Get total count for pagination
+    const total = await Product.countDocuments(filter);
+
+    res.status(200).json({
+      success: true,
+      total,
+      page: Number(page),
+      pages: Math.ceil(total / limit),
+      limit: Number(limit),
+      data: products,
+    });
+  } catch (error) {
+    console.error("Error fetching vendor products:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching your products",
+      error: error.message,
+    });
+  }
+};
+
 export {
   getProductsByLocation,
   getProductById,
@@ -517,4 +606,5 @@ export {
   getVendorsWithProducts,
   getProductImageByName,
   getVendorLeaderboard,
+  getVendorProducts
 };

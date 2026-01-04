@@ -99,7 +99,7 @@ const LeaderBoard = ({
     }
 
     try {
-      sseRef.current = new EventSource(`${streamUrl}?authorization=Bearer ${token}`);
+      sseRef.current = new EventSource(streamUrl);
 
       sseRef.current.onopen = () => {
         console.log("SSE connection established");

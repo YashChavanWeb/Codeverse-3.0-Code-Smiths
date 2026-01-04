@@ -13,6 +13,7 @@ import {
   getVendorsWithProducts,
   getProductImageByName,
   getVendorLeaderboard,
+  getVendorProducts,
 } from "./productController.js";
 
 const router = express.Router();
@@ -90,5 +91,6 @@ router.patch("/:id/price", verifyUser, updateProductPrice);
 router.patch("/:id/stock", verifyUser, updateProductStock);
 router.patch("/:id/available", verifyUser, updateProductAvailable);
 router.delete("/:id", verifyUser, deleteProduct);
+router.get("/vendor/my-products", verifyUser, getVendorProducts);
 
 export default router;
