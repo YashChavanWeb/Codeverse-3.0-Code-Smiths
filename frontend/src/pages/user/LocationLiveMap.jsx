@@ -22,7 +22,7 @@ const LiveLocationMap = () => {
       setLoading(true);
       try {
         const res = await axios.get(
-          "http://localhost:3000/api/v1/products/vendors-with-products"
+          `${import.meta.env.VITE_BACKEND_URL}/products/vendors-with-products`
         );
         const vendors = res.data.data || [];
         setAllVendors(vendors);

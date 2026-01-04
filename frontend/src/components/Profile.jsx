@@ -14,7 +14,7 @@ const Profile = () => {
     const fetchUserProfile = async () => {
       try {
         setLoading(true);
-        const response = await axios.get("http://localhost:3000/api/v1/auth/me", {
+        const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/auth/me`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },

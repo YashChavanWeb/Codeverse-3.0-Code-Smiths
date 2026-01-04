@@ -36,7 +36,7 @@ function Signin() {
 
     setIsLoading(true);
     try {
-      const response = await axios.post("http://localhost:3000/api/v1/auth/signin", formData);
+      const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/auth/signin`, formData);
 
       if (response.status === 200) {
         const { token, role, username } = response.data;

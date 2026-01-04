@@ -13,7 +13,7 @@ const VendorLeaderboard = () => {
     const fetchLeaderboard = async () => {
       try {
         const res = await fetch(
-          `http://localhost:3000/api/v1/vendors/leaderboard?city=${city}`
+          `${import.meta.env.VITE_BACKEND_URL}/vendors/leaderboard?city=${city}`
         );
         const data = await res.json();
 
