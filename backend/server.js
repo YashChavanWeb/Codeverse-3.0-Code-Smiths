@@ -11,9 +11,8 @@ import startProductWorker from "./src/queue/productWorker.js";
 
 import verifyUser from "./src/auth/authMiddleware.js";
 import { parseVoiceInput } from "./src/utils/voice.controller.js";
-import vendorLeaderboardRoutes from "./src/vendor/vendorLeaderboardRoutes.js" ; 
+import vendorLeaderboardRoutes from "./src/vendor/vendorLeaderboardRoutes.js";
 import notificationRoutes from "./src/notifications/notificationRoutes.js";
-
 
 const logRequest = (message) => {
   console.log(`[LOG]: ${message}`);
@@ -23,7 +22,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 const corsOptions = {
-  origin: ["*"],
+  origin: ["http://localhost:5173"],
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true,
@@ -47,10 +46,8 @@ app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/products", productRoutes);
 app.use("/api/v1/basket", basketRoutes);
 
-
 // Add this route (after other routes)
 app.use("/api/v1/notifications", notificationRoutes);
-
 
 app.use("/api/v1/vendors", vendorLeaderboardRoutes);
 
