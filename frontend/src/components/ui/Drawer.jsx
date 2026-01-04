@@ -56,13 +56,15 @@ const Drawer = ({ open, onToggle, role: propRole }) => {
       { label: "Location Vendors", icon: <MapPin size={20} />, path: "/location-vendors" },
       { label: "Basket Estimator", icon: <DollarSign size={20} />, path: "/basket-estimator" },
     ],
-    vendor: [
-      { label: "Dashboard", icon: <HomeIcon size={20} />, path: "/vendor" },
-      { label: "Add Products", icon: <PlusSquare size={20} />, path: "/vendor/add" },
-      { label: "Manage Products", icon: <Tag size={20} />, path: "/vendor/products" },
-      { label: "Market Insights", icon: <BarChart2 size={20} />, path: "/vendor/compare" },
-      { label: "Voice Updates", icon: <Mic size={20} />, path: "/vendor/add/voice" },
-    ],
+   vendor: [
+  { label: "Dashboard", icon: <HomeIcon size={20} />, path: "/vendor" },
+
+  { label: "Add Products", icon: <PlusSquare size={20} />, path: "/vendor/add" },
+  { label: "Manage Products", icon: <Tag size={20} />, path: "/vendor/products" },
+  { label: "Market Insights", icon: <BarChart2 size={20} />, path: "/vendor/compare" },
+  { label: "Voice Updates", icon: <Mic size={20} />, path: "/vendor/add/voice" },
+],
+
   };
 
   const navItems = menuConfig[role] || menuConfig.user;
