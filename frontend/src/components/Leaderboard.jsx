@@ -89,7 +89,7 @@ const LeaderBoard = ({ fetchUrl, streamUrl, title = "Leaderboard", pageSize = 5 
     <div className="p-4 md:p-6 w-full max-h-[calc(100vh-120px)] overflow-y-auto">
       <section className="flex flex-row justify-between">
 
-      <h2 className="text-2xl font-bold mb-6">{title}</h2>
+      <h2 className="text-2xl font-bold mb-6 ">{title}</h2>
 
       {/* FILTER BAR */}
       <div className="flex flex-wrap gap-3 mb-6">
@@ -146,7 +146,7 @@ const LeaderBoard = ({ fetchUrl, streamUrl, title = "Leaderboard", pageSize = 5 
       {/* TABLE */}
       <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100">
         <table className="w-full border-collapse">
-          <thead className="bg-gray-50 border-b border-gray-100">
+          <thead className="bg-gradient-to-br from-green-50/80 via-green-600/20 to green-50/80 border-b border-gray-100">
             <tr>
               <th className="p-4 text-left text-gray-600 font-bold uppercase text-xs tracking-wider">Product</th>
               <th className="p-4 text-center text-gray-600 font-bold uppercase text-xs tracking-wider">Category</th>
@@ -193,14 +193,14 @@ const LeaderBoard = ({ fetchUrl, streamUrl, title = "Leaderboard", pageSize = 5 
                       exit={{ opacity: 0, scale: 0.95 }}
                       className="border-b border-gray-50 relative transition-colors hover:bg-gray-50/50"
                     >
-                      <td className="p-4 flex items-center gap-3">
+                      <td className="p-4 flex items-center gap-1">
                         <motion.img
                           animate={{ scale: isHighlighted ? [1, 1.25, 1] : 1 }}
                           transition={{ duration: 0.4 }}
                           /* 🔹 Uses image string from DB instead of static map */
                           src={p.imageUrl}
                           alt={p.name}
-                          className="w-12 h-12 object-contain rounded-md"
+                          className="w-15 h-15 object-fit rounded-md"
                           /* Fallback in case DB image fails to load */
                           onError={(e) => { e.target.src = "https://via.placeholder.com/150?text=Product"; }}
                         />
@@ -208,7 +208,7 @@ const LeaderBoard = ({ fetchUrl, streamUrl, title = "Leaderboard", pageSize = 5 
                       </td>
                       <td className="p-4 text-center text-gray-500">{p.category}</td>
                       <td className="p-4 text-center">
-                        <span className={`px-3 py-1 rounded-full text-xs font-bold ${stockVal < 40 ? "bg-red-100 text-red-600" : "bg-green-100 text-green-600"}`}>
+                        <span className={`px-3 py-1 rounded-full text-lg font-bold ${stockVal < 40 ? "bg-red-100 text-red-600" : "bg-green-100 text-green-600"}`}>
                           {stockVal}
                         </span>
                       </td>

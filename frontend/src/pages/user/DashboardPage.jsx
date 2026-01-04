@@ -87,8 +87,8 @@ const Dashboard = () => {
 
       {/* Leaderboard Section */}
       <section className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden w-full">
-        <div className="p-4 border-b bg-gray-50/50">
-          <h3 className="font-semibold text-gray-700">Market Insights</h3>
+        <div className="p-4 border-b bg-linear-to-br from-green-50/80 via-green-600/20 to green-50/80">
+          <h3 className="font-semibold text-gray-700 ">Market Insights</h3>
         </div>
         <div className="w-full">
           <Leaderboard

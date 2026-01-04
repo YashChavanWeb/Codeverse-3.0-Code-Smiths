@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import LiveMap from "../../components/LiveMap";
 import { Input, Button, Card } from "../../components/ui";
-import { List } from "lucide-react";
+import { List, ChevronDown, ChevronUp } from "lucide-react";
 import logo from "../../assets/Images/logo.png";
 
 const LiveLocationMap = () => {
@@ -12,6 +12,9 @@ const LiveLocationMap = () => {
   const [defaultVendors, setDefaultVendors] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showList, setShowList] = useState(false);
+
+  // Real-time user location
+  const [userLocation, setUserLocation] = useState({ lat: 0, lng: 0 });
 
   // Fetch vendors
   useEffect(() => {
@@ -36,14 +39,30 @@ const LiveLocationMap = () => {
     fetchVendors();
   }, []);
 
-  // LOCK BODY SCROLL WHEN MOBILE LIST IS OPEN
+  // Real-time geolocation tracking (once on mount)
   useEffect(() => {
-    if (showList) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "auto";
+    if (!navigator.geolocation) {
+      console.warn("Geolocation is not supported by your browser");
+      return;
     }
 
+    const id = navigator.geolocation.watchPosition(
+      (position) => {
+        setUserLocation({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        });
+      },
+      (err) => console.error("Failed to get location", err),
+      { enableHighAccuracy: true, maximumAge: 10000, timeout: 5000 }
+    );
+
+    return () => navigator.geolocation.clearWatch(id);
+  }, []);
+
+  // Lock body scroll on mobile list
+  useEffect(() => {
+    document.body.style.overflow = showList ? "hidden" : "auto";
     return () => {
       document.body.style.overflow = "auto";
     };
@@ -90,12 +109,15 @@ const LiveLocationMap = () => {
       <div className="flex flex-1 relative overflow-hidden">
         {/* Map */}
         <div className="flex-1">
-          <LiveMap filteredVendors={filteredVendors} />
+          <LiveMap
+            filteredVendors={filteredVendors}
+            userLocation={userLocation}
+          />
         </div>
 
         {/* Desktop Vendor List */}
         <div className="hidden md:block w-1/3 bg-white mx-10 mb-10 h-full overflow-y-auto overscroll-contain">
-          <VendorList vendors={filteredVendors} loading={loading} />
+          <VendorList vendors={filteredVendors} loading={loading} search={search} />
         </div>
 
         {/* Mobile Bottom Sheet */}
@@ -111,10 +133,8 @@ const LiveLocationMap = () => {
               Close
             </Button>
           </div>
-
-          {/* THIS is where scrolling is trapped */}
           <div className="p-3 h-full overflow-y-auto overscroll-contain">
-            <VendorList vendors={filteredVendors} loading={loading} />
+            <VendorList vendors={filteredVendors} loading={loading} search={search} />
           </div>
         </div>
 
@@ -134,7 +154,8 @@ const LiveLocationMap = () => {
   );
 };
 
-const VendorList = ({ vendors, loading }) => {
+// VendorList Component
+const VendorList = ({ vendors, loading, search = "" }) => {
   if (loading) return <div className="text-center">Searching…</div>;
 
   if (!vendors.length)
@@ -145,16 +166,22 @@ const VendorList = ({ vendors, loading }) => {
       </div>
     );
 
-  return (
-    <div className="flex flex-col gap-3 mb-10 max-h-screen">
-      <span className="text-xl font-bold">Vendors</span>
+  // Search mode: show direct product cards
+  if (search.trim()) {
+    const productCards = vendors.flatMap((v) =>
+      v.items.map((item) => ({
+        ...item,
+        vendorName: v.name,
+      }))
+    );
 
-      {vendors.map((v) => (
-        <Card key={v._id} className="px-6 py-4">
-          <div className="font-semibold">{v.name}</div>
-
-          {v.items.map((item) => (
-            <div key={item._id} className="flex justify-between mt-3">
+    return (
+      <div className="flex flex-col gap-3 mb-10 max-h-screen">
+        <span className="text-xl font-bold">Search Results</span>
+        {productCards.map((item) => (
+          <Card key={item._id} className="px-6 py-4">
+            <div className="font-semibold">{item.vendorName}</div>
+            <div className="flex justify-between items-center mt-3">
               <div className="flex gap-3 items-center">
                 <img
                   src={item.imageUrl}
@@ -168,14 +195,74 @@ const VendorList = ({ vendors, loading }) => {
                   </div>
                 </div>
               </div>
-
               <Button size="sm" variant="ghost">
                 Add
               </Button>
             </div>
-          ))}
-        </Card>
-      ))}
+          </Card>
+        ))}
+      </div>
+    );
+  }
+
+  // Default mode: show vendors with expandable dropdowns
+  const [expandedVendors, setExpandedVendors] = React.useState({});
+
+  const toggleVendor = (id) => {
+    setExpandedVendors((prev) => ({
+      ...prev,
+      [id]: !prev[id],
+    }));
+  };
+
+  return (
+    <div className="flex flex-col gap-3 mb-10 max-h-screen">
+      <span className="text-xl font-bold">Vendors</span>
+      {vendors.map((v) => {
+        const isExpanded = expandedVendors[v._id] || false;
+
+        return (
+          <Card key={v._id} className="px-6 py-4">
+            <div className="flex justify-between items-center">
+              <div className="font-semibold text-lg">{v.name}</div>
+              {v.items.length > 0 && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => toggleVendor(v._id)}
+                >
+                  {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                </Button>
+              )}
+            </div>
+
+            {isExpanded && (
+              <div className="mt-3 flex flex-col gap-3">
+                {v.items.map((item) => (
+                  <div key={item._id} className="flex justify-between items-center">
+                    <div className="flex gap-3 items-center">
+                      <img
+                        src={item.imageUrl}
+                        className="w-10 h-10 rounded"
+                        alt={item.name}
+                      />
+                      <div>
+                        <div>{item.name}</div>
+                        <div className="text-sm text-gray-500">
+                          ₹{item.price}/{item.unit}
+                        </div>
+                      </div>
+                    </div>
+                    <Button size="sm" variant="ghost">
+                      Add
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Card>
+        );
+      })}
     </div>
   );
 };
