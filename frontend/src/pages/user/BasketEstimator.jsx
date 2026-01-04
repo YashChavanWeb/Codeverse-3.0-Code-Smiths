@@ -4,30 +4,33 @@ import { ShoppingBasket, Plus, Check, Loader2, X } from "lucide-react";
 import axios from "axios";
 import { useBasket } from "../../context/BasketContext";
 import { useAuth } from "../../context/AuthContext";
+import { Button, Card, Input } from "../../components/ui";
+import logo from '../../assets/Images/logo.png';
 
 const RATE_PER_KM = 5;
 
 const BasketEstimator = () => {
   const { basket, addToBasket, removeFromBasket, basketTotal } = useBasket();
   const { token } = useAuth();
+
   const [showVendors, setShowVendors] = useState(false);
   const [estimatorProducts, setEstimatorProducts] = useState([]);
   const [estimatedVendors, setEstimatedVendors] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isCalculating, setIsCalculating] = useState(false);
+  const [search, setSearch] = useState("");
 
   const BASE_URL = import.meta.env.VITE_BACKEND_URL;
 
+  // Fetch products for estimation
   useEffect(() => {
     const fetchEstimatorProducts = async () => {
       try {
         setIsLoading(true);
         const res = await axios.get(`${BASE_URL}/basket/estimator-products`);
-        if (res.data.success) {
-          setEstimatorProducts(res.data.data);
-        }
-      } catch (error) {
-        console.error("Error fetching estimator products:", error);
+        if (res.data.success) setEstimatorProducts(res.data.data);
+      } catch (err) {
+        console.error("Error fetching estimator products:", err);
       } finally {
         setIsLoading(false);
       }
@@ -35,17 +38,15 @@ const BasketEstimator = () => {
     fetchEstimatorProducts();
   }, [BASE_URL]);
 
+  // Add product to basket
   const handleProductAdd = async (product) => {
     setShowVendors(false);
 
-    // 1. User-wise Addition (Local Context)
-    // We use a dummy vendor initially for estimation
     addToBasket(
       { _id: `temp-${product.name}`, name: product.name, price: product.avgPrice },
       { _id: "dummy", name: "General" }
     );
 
-    // 2. Demand-wise Addition (Backend Signal)
     if (token) {
       try {
         await axios.post(
@@ -53,190 +54,164 @@ const BasketEstimator = () => {
           { productName: product.name },
           { headers: { Authorization: `Bearer ${token}` } }
         );
-      } catch (error) {
-        console.error("Error signaling demand:", error);
+      } catch (err) {
+        console.error("Error signaling demand:", err);
       }
     }
   };
 
+  // Calculate best vendor
   const calculateBestVendor = async () => {
-    if (basket.length === 0) return;
+    if (!basket.length) return;
     try {
       setIsCalculating(true);
-      const items = basket.map((item) => ({
-        name: item.name,
-        qty: item.qty,
-      }));
-
+      const items = basket.map((item) => ({ name: item.name, qty: item.qty }));
       const res = await axios.post(`${BASE_URL}/basket/estimate`, { items });
       if (res.data.success) {
-        // Map backend results to include a mock distance for now 
-        // (In real app, calculate distance between user and vendor location)
         const enrichedVendors = res.data.data.map((v, idx) => ({
           ...v,
-          distance: (idx + 1) * 1.2, // Mock distance
+          distance: (idx + 1) * 1.2, // mock distance
         }));
         setEstimatedVendors(enrichedVendors);
         setShowVendors(true);
       }
-    } catch (error) {
-      console.error("Error calculating best vendor:", error);
+    } catch (err) {
+      console.error("Error calculating best vendor:", err);
     } finally {
       setIsCalculating(false);
     }
   };
 
   const vendorTotal = (v) => v.totalPrice + v.distance * RATE_PER_KM;
+  const cheapest = estimatedVendors.length
+    ? estimatedVendors.reduce((a, b) => (vendorTotal(a) < vendorTotal(b) ? a : b))
+    : null;
 
-  const cheapest =
-    estimatedVendors.length > 0
-      ? estimatedVendors.reduce((a, b) =>
-        vendorTotal(a) < vendorTotal(b) ? a : b
-      )
-      : null;
+  const filteredProducts = estimatorProducts.filter((p) =>
+    p.name.toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
-    <div className="max-w-7xl mx-auto px-6 py-10">
-      {/* Header */}
-      <div className="mb-10">
-        <div className="flex justify-between items-start">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
-              Basket Estimator
-            </h1>
-            <p className="text-gray-500 mt-1">
-              Build your basket and find the best nearby vendor
-            </p>
-          </div>
-          {isLoading && <Loader2 className="animate-spin text-green-600" />}
+    <div className="w-full mx-auto px-10 py-10">
+      {/* HEADER */}
+      <div className="mb-10 flex justify-between items-start">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Basket Estimator</h1>
+          <p className="text-gray-500 mt-1">
+            Build your basket and find the best nearby vendor
+          </p>
         </div>
+        {isLoading && <Loader2 className="animate-spin text-green-600" />}
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-12 items-start">
+      <div className="grid lg:grid-cols-3 gap-10 items-start h-[75vh]">
         {/* PRODUCTS */}
         <div>
-          <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">
+          <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">
             Available for Estimation
           </h2>
 
-          <div className="space-y-1 max-h-[600px] overflow-y-auto pr-2 scrollbar-hide">
-            {estimatorProducts.length === 0 && !isLoading ? (
-              <p className="text-sm text-gray-400 italic">No products available for estimation...</p>
+          <Input
+            type="text"
+            placeholder="Search product..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="mb-4"
+          />
+
+          <div className="space-y-2 h-100 overflow-y-auto pr-2">
+            {filteredProducts.length === 0 ? (
+              <p className="text-sm text-gray-400 italic">No matching products...</p>
             ) : (
-              estimatorProducts.map((p) => (
-                <button
-                  key={p.name}
-                  onClick={() => handleProductAdd(p)}
-                  className="w-full flex items-center justify-between py-3 px-4 rounded-xl hover:bg-green-50 group transition-all duration-200 border border-transparent hover:border-green-100"
-                >
-                  <div className="text-left">
-                    <p className="font-semibold text-gray-700 group-hover:text-green-700">
-                      {p.name}
-                    </p>
-                    <p className="text-[10px] uppercase text-gray-400 font-bold tracking-tight">
-                      {p.category}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm font-medium text-gray-500">
-                      avg ₹{p.avgPrice.toFixed(0)}
-                    </span>
-                    <div className="bg-green-100 text-green-600 p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Plus size={16} />
+              filteredProducts.map((p) => (
+                <motion.div key={p.name} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}>
+                  <div
+                    onClick={() => handleProductAdd(p)}
+                    className="cursor-pointer bg-white rounded-2xl p-4 border border-gray-100 hover:border-green-200 shadow-sm hover:shadow-md flex justify-between items-center transition-all"
+                  >
+                    <div>
+                      <p className="font-semibold text-gray-700">{p.name}</p>
+                      <p className="text-[10px] uppercase text-gray-400 font-bold">
+                        {p.category}
+                      </p>
                     </div>
+                    <Plus size={18} className="text-green-600" />
                   </div>
-                </button>
+                </motion.div>
               ))
             )}
           </div>
         </div>
 
         {/* BASKET */}
-        <div className="flex flex-col items-center bg-gray-50/50 rounded-3xl p-8 border border-gray-100">
-          <motion.div
-            animate={{ scale: basket.length ? 1.05 : 1 }}
-            className="relative"
-          >
-            <div className="bg-white p-6 rounded-full shadow-lg shadow-green-100 border border-green-50">
-              <ShoppingBasket size={64} className="text-green-600" />
+        <Card variant='glass' className="bg-white rounded-3xl shadow-xl border border-gray-100 p-8 flex flex-col items-center">
+          <motion.div animate={{ scale: basket.length ? 1.05 : 1 }} className="relative">
+            <div className="bg-green-50 p-6 rounded-full">
+              <ShoppingBasket size={50} className="text-green-600" />
             </div>
             {basket.length > 0 && (
-              <span className="absolute -top-1 -right-1 bg-green-600 text-white text-[10px] font-bold px-2 py-1 rounded-full shadow-lg">
+              <span className="absolute -top-1 -right-1 bg-green-600 text-white text-[10px] font-bold px-2 py-1 rounded-full">
                 {basket.reduce((a, b) => a + b.qty, 0)}
               </span>
             )}
           </motion.div>
 
-          <div className="mt-8 w-full space-y-3">
+          <div className="mt-8 w-full">
             {basket.length === 0 ? (
-              <div className="text-center py-10">
-                <p className="text-gray-400 text-sm italic">
-                  Your estimation basket is empty
-                </p>
-                <p className="text-[10px] text-gray-300 uppercase font-bold mt-2">
-                  Add items from the list
-                </p>
+                <div className="flex flex-col justify-center items-center text-center p-8 bg-gray-50/70 rounded-2xl border-2 border-dashed border-gray-400 mx-auto">
+                      <img src={logo} className="w-15 h-15"></img>
+              <p className="text-center text-gray-400 italic py-10">Your estimation basket is empty</p>
               </div>
             ) : (
               <>
-                <div className="max-h-[300px] overflow-y-auto space-y-2 pr-2">
-                  {basket.map((item, idx) => (
-                    <div
-                      key={item._id || `${item.name}-${idx}`}
-                      className="flex justify-between items-center bg-white p-3 rounded-xl border border-gray-100 group"
-                    >
-                      <div className="flex items-center gap-3">
-                        <button
-                          onClick={() => removeFromBasket(item._id, item.vendorId)}
-                          className="p-1 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors opacity-0 group-hover:opacity-100"
-                        >
-                          <X size={14} />
-                        </button>
-                        <div>
-                          <p className="text-sm font-semibold text-gray-700">
-                            {item.name}
-                          </p>
-                          <p className="text-[10px] text-gray-400">
-                            Qty: {item.qty}
-                          </p>
+                <div className="h-50 overflow-y-auto space-y-2 pr-2">
+                  <AnimatePresence>
+                    {basket.map((item, idx) => (
+                      <motion.div
+                        key={item._id || `${item.name}-${idx}`}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        transition={{ duration: 0.2 }}
+                        className="flex justify-between items-center bg-white p-3 rounded-xl shadow"
+                      >
+                        <div className="w-full flex flex-row-reverse justify-between items-center gap-2">
+                          <button
+                            onClick={() => removeFromBasket(item._id, item.vendorId)}
+                            className="p-1 text-gray-500 hover:text-red-500 hover:bg-red-50 rounded-md"
+                          >
+                            <X size={14} />
+                          </button>
+                          <div>
+                            <p className="text-[14px] font-semibold text-gray-700 italic">{item.name}</p>
+                            <p className="text-[14px] text-gray-700">Qty: {item.qty}</p>
+                          </div>
                         </div>
-                      </div>
-                      <span className="text-sm font-bold text-gray-600">
-                        ₹{item.price * item.qty}
-                      </span>
-                    </div>
-                  ))}
+                        {/* <span className="font-bold text-gray-700">₹{item.price * item.qty}</span> */}
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
                 </div>
 
-                <div className="pt-4 border-t border-dashed border-gray-200">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-bold text-gray-400 uppercase tracking-wider">
-                      Avg. Subtotal
-                    </span>
-                    <span className="text-xl font-black text-gray-800">
-                      ₹{basketTotal.toFixed(0)}
-                    </span>
-                  </div>
-                </div>
+                {/* <div className="mt-4 flex justify-between items-center border-t border-dashed pt-4">
+                  <span className="text-sm font-bold text-gray-400 uppercase">Avg Subtotal</span>
+                  <span className="text-xl font-black text-gray-800">₹{basketTotal.toFixed(0)}</span>
+                </div> */}
 
-                <button
+                <Button
                   onClick={calculateBestVendor}
                   disabled={isCalculating}
-                  className="w-full mt-4 bg-green-600 text-white px-6 py-4 rounded-2xl font-bold hover:bg-green-700 transition-all active:scale-95 shadow-lg shadow-green-100 flex items-center justify-center gap-2 disabled:opacity-70"
+                  className="w-full mt-4 bg-green-600 text-white px-6 py-4 rounded-2xl font-bold hover:bg-green-700 transition-all flex justify-center gap-2"
                 >
-                  {isCalculating ? (
-                    <Loader2 size={20} className="animate-spin" />
-                  ) : (
-                    "Calculate Best Vendor"
-                  )}
-                </button>
+                  {isCalculating ? <Loader2 size={20} className="animate-spin" /> : "Calculate Best Vendor"}
+                </Button>
               </>
             )}
           </div>
-        </div>
+        </Card>
 
         {/* VENDORS */}
-        <div className="min-h-[400px]">
+        <div className="h-100">
           <AnimatePresence mode="wait">
             {showVendors ? (
               <motion.div
@@ -251,7 +226,8 @@ const BasketEstimator = () => {
 
                 <div className="space-y-4">
                   {estimatedVendors.length === 0 ? (
-                    <div className="text-center py-10 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
+                    <div className="flex flex-col justify-center items-center text-center p-10 bg-gray-50 rounded-2xl border border-dashed border-gray-200 mx-auto">
+                      <img src={logo} className="w-15 h-15"></img>
                       <p className="text-sm text-gray-400">
                         No individual vendor found with all items in stock.
                       </p>
@@ -290,7 +266,7 @@ const BasketEstimator = () => {
                               </div>
 
                               <div className="text-right">
-                                <p className="text-lg font-black text-gray-900">
+                                <p className="text-lg font-bold text-gray-900">
                                   ₹{total.toFixed(0)}
                                 </p>
                                 <p className="text-[10px] text-gray-400 font-bold uppercase mt-0.5">

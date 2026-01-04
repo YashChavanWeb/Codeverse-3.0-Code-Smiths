@@ -1,9 +1,15 @@
 import React, { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowUp, ArrowDown } from "lucide-react";
+import { ArrowUp, ArrowDown, Plus, Check } from "lucide-react";
 import axios from "axios";
+import { useBasket } from "../context/BasketContext";
 
-const LeaderBoard = ({ fetchUrl, streamUrl, title = "Leaderboard", pageSize = 5 }) => {
+const LeaderBoard = ({
+  fetchUrl,
+  streamUrl,
+  title = "Leaderboard",
+  pageSize = 5,
+}) => {
   const [products, setProducts] = useState([]);
   const [prevPrices, setPrevPrices] = useState({});
   const [page, setPage] = useState(1);
@@ -11,15 +17,44 @@ const LeaderBoard = ({ fetchUrl, streamUrl, title = "Leaderboard", pageSize = 5 
   const [loading, setLoading] = useState(true);
   const [lastUpdatedId, setLastUpdatedId] = useState(null);
 
-  /* FILTER STATE */
   const [category, setCategory] = useState("");
   const [stockStatus, setStockStatus] = useState("");
   const [sortByPrice, setSortByPrice] = useState("");
-  const [sortByStock, setSortByStock] = useState("");
+
+  const [addedMap, setAddedMap] = useState({});
 
   const sseRef = useRef(null);
 
+  const { basket, addToBasket } = useBasket();
+
+  /* ---------------- BASKET HELPERS ---------------- */
+
+  const getQtyInBasket = (productId) => {
+    const item = basket.find((b) => b.product?._id === productId);
+    return item ? item.qty : 0;
+  };
+
+  const handleAddToBasket = (p) => {
+    addToBasket(
+      {
+        _id: p._id,
+        name: p.name,
+        price: p.price,
+      },
+      {
+        _id: p.vendorId || "leaderboard",
+        name: "Leaderboard Vendor",
+      }
+    );
+
+    setAddedMap((prev) => ({
+      ...prev,
+      [p._id]: true,
+    }));
+  };
+
   /* ---------------- FETCH DATA ---------------- */
+
   const fetchData = async (pageNo = 1) => {
     if (!fetchUrl) return;
     try {
@@ -31,7 +66,6 @@ const LeaderBoard = ({ fetchUrl, streamUrl, title = "Leaderboard", pageSize = 5 
           category: category || undefined,
           stockStatus: stockStatus || undefined,
           sortByPrice: sortByPrice || undefined,
-          sortByStock: sortByStock || undefined,
         },
       });
 
@@ -56,9 +90,10 @@ const LeaderBoard = ({ fetchUrl, streamUrl, title = "Leaderboard", pageSize = 5 
 
   useEffect(() => {
     fetchData(page);
-  }, [page, category, stockStatus, sortByPrice, sortByStock, fetchUrl]);
+  }, [page, category, stockStatus, sortByPrice, fetchUrl]);
 
-  /* ---------------- SSE UPDATES ---------------- */
+  /* ---------------- SSE ---------------- */
+
   useEffect(() => {
     if (!streamUrl) return;
     sseRef.current = new EventSource(streamUrl);
@@ -85,157 +120,112 @@ const LeaderBoard = ({ fetchUrl, streamUrl, title = "Leaderboard", pageSize = 5 
     return () => sseRef.current?.close();
   }, [streamUrl]);
 
+  /* ---------------- UI ---------------- */
+
   return (
-    <div className="p-4 md:p-6 w-full max-h-[calc(100vh-120px)] overflow-y-auto">
-      <section className="flex flex-row justify-between">
+    <div className="p-4 md:p-6 w-full">
+      <h2 className="text-2xl font-bold mb-6">{title}</h2>
 
-      <h2 className="text-2xl font-bold mb-6 ">{title}</h2>
-
-      {/* FILTER BAR */}
-      <div className="flex flex-wrap gap-3 mb-6">
-        <select
-          className="px-3 py-2 rounded-md bg-gray-200 text-sm outline-none focus:ring-2 focus:ring-blue-400 transition-all"
-          value={category}
-          onChange={(e) => setCategory(e.target.value)}
-        >
-          <option value="">All Categories</option>
-          <option value="Vegetable">Vegetable</option>
-          <option value="Fruit">Fruit</option>
-        </select>
-
-        <select
-          className="px-3 py-2 rounded-md bg-gray-200 text-sm outline-none focus:ring-2 focus:ring-blue-400 transition-all"
-          value={stockStatus}
-          onChange={(e) => setStockStatus(e.target.value)}
-        >
-          <option value="">All Stock</option>
-          <option value="low">Low Stock</option>
-          <option value="med">Medium Stock</option>
-          <option value="high">High Stock</option>
-          <option value="out">Out of Stock</option>
-        </select>
-
-        <select
-          className="px-3 py-2 rounded-md bg-gray-200 text-sm outline-none focus:ring-2 focus:ring-blue-400 transition-all"
-          value={sortByPrice}
-          onChange={(e) => {
-            setSortByStock("");
-            setSortByPrice(e.target.value);
-          }}
-        >
-          <option value="">Sort by Price</option>
-          <option value="asc">Price ↑</option>
-          <option value="desc">Price ↓</option>
-        </select>
-
-        <button
-          onClick={() => {
-            setCategory("");
-            setStockStatus("");
-            setSortByPrice("");
-            setSortByStock("");
-            setPage(1);
-          }}
-          className="px-4 py-2 bg-gray-300 hover:bg-gray-400 rounded-md text-sm transition-colors"
-        >
-          Clear
-        </button>
-      </div>
-      </section>
-
-      {/* TABLE */}
-      <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100">
-        <table className="w-full border-collapse">
-          <thead className="bg-gradient-to-br from-green-50/80 via-green-600/20 to green-50/80 border-b border-gray-100">
+      <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+        <table className="w-full">
+          <thead className="bg-green-50 border-b">
             <tr>
-              <th className="p-4 text-left text-gray-600 font-bold uppercase text-xs tracking-wider">Product</th>
-              <th className="p-4 text-center text-gray-600 font-bold uppercase text-xs tracking-wider">Category</th>
-              <th className="p-4 text-center text-gray-600 font-bold uppercase text-xs tracking-wider">Stock</th>
-              <th className="p-4 text-center text-gray-600 font-bold uppercase text-xs tracking-wider">Unit</th>
-              <th className="p-4 text-center text-gray-600 font-bold uppercase text-xs tracking-wider">Price</th>
+              <th className="p-4 text-left">Product</th>
+              <th className="p-4 text-center">Category</th>
+              <th className="p-4 text-center">Stock</th>
+              <th className="p-4 text-center">Unit</th>
+              <th className="p-4 text-center">Price</th>
+              <th className="p-4 text-center">Basket</th>
             </tr>
           </thead>
 
           <tbody>
-            {loading && products.length === 0 ? (
-              <tr>
-                <td colSpan="5" className="p-8 text-center text-gray-400">
-                  <div className="flex justify-center items-center gap-2">
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-100"></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-200"></div>
-                  </div>
-                </td>
-              </tr>
-            ) : products.length === 0 ? (
-              <tr>
-                <td colSpan="5" className="p-8 text-center text-gray-400">No data found</td>
-              </tr>
-            ) : (
-              <AnimatePresence mode="popLayout">
-                {products.map((p) => {
-                  const stockVal = p.stock?.current ?? p.stock;
-                  const prev = prevPrices[p._id];
-                  const up = prev !== undefined && p.price > prev;
-                  const down = prev !== undefined && p.price < prev;
-                  const isHighlighted = lastUpdatedId === p._id;
+            {products.map((p) => {
+              const stockVal = p.stock?.current ?? p.stock;
+              const prev = prevPrices[p._id];
+              const up = prev !== undefined && p.price > prev;
+              const down = prev !== undefined && p.price < prev;
+              const qty = getQtyInBasket(p._id);
+              const isAdded = qty > 0 || addedMap[p._id];
 
-                  return (
-                    <motion.tr
-                      key={p._id}
-                      layout
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{
-                        opacity: 1,
-                        scale: isHighlighted ? 1.01 : 1,
-                        backgroundColor: isHighlighted ? "rgba(74, 222, 128, 0.2)" : "rgba(255, 255, 255, 0)",
-                      }}
-                      exit={{ opacity: 0, scale: 0.95 }}
-                      className="border-b border-gray-50 relative transition-colors hover:bg-gray-50/50"
+              return (
+                <motion.tr
+                  key={p._id}
+                  layout
+                  className="border-b hover:bg-gray-50"
+                >
+                  <td className="p-4 flex items-center gap-2">
+                    <img
+                      src={p.imageUrl}
+                      onError={(e) =>
+                        (e.target.src =
+                          "https://via.placeholder.com/100?text=Product")
+                      }
+                      className="w-10 h-10 rounded-md object-cover"
+                    />
+                    <span className="font-semibold">{p.name}</span>
+                  </td>
+
+                  <td className="p-4 text-center">{p.category}</td>
+
+                  <td className="p-4 text-center">
+                    <span
+                      className={`px-3 py-1 rounded-full font-bold ${
+                        stockVal < 40
+                          ? "bg-red-100 text-red-600"
+                          : "bg-green-100 text-green-600"
+                      }`}
                     >
-                      <td className="p-4 flex items-center gap-1">
-                        <motion.img
-                          animate={{ scale: isHighlighted ? [1, 1.25, 1] : 1 }}
-                          transition={{ duration: 0.4 }}
-                          /* 🔹 Uses image string from DB instead of static map */
-                          src={p.imageUrl}
-                          alt={p.name}
-                          className="w-15 h-15 object-fit rounded-md"
-                          /* Fallback in case DB image fails to load */
-                          onError={(e) => { e.target.src = "https://via.placeholder.com/150?text=Product"; }}
-                        />
-                        <span className="font-semibold text-gray-800">{p.name}</span>
-                      </td>
-                      <td className="p-4 text-center text-gray-500">{p.category}</td>
-                      <td className="p-4 text-center">
-                        <span className={`px-3 py-1 rounded-full text-lg font-bold ${stockVal < 40 ? "bg-red-100 text-red-600" : "bg-green-100 text-green-600"}`}>
-                          {stockVal}
-                        </span>
-                      </td>
-                      <td className="p-4 text-center text-gray-500">{p.unit}</td>
-                      <td className="p-4 text-center">
-                        <div className="flex items-center justify-center gap-1 font-bold text-gray-800">
-                          ₹{p.price}
-                          <AnimatePresence mode="wait">
-                            {up && <motion.div key="up" initial={{ y: 5, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -5, opacity: 0 }}><ArrowUp className="w-4 text-red-600" /></motion.div>}
-                            {down && <motion.div key="down" initial={{ y: -5, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 5, opacity: 0 }}><ArrowDown className="w-4 text-green-600" /></motion.div>}
-                          </AnimatePresence>
-                        </div>
-                      </td>
-                    </motion.tr>
-                  );
-                })}
-              </AnimatePresence>
-            )}
+                      {stockVal}
+                    </span>
+                  </td>
+
+                  <td className="p-4 text-center">{p.unit}</td>
+
+                  <td className="p-4 text-center font-bold">
+                    ₹{p.price}
+                    {up && <ArrowUp className="inline w-4 text-red-600 ml-1" />}
+                    {down && (
+                      <ArrowDown className="inline w-4 text-green-600 ml-1" />
+                    )}
+                  </td>
+
+                  <td className="p-4 text-center">
+                    <button
+                      disabled={stockVal === 0}
+                      onClick={() => handleAddToBasket(p)}
+                      className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold
+                        transition-all active:scale-95
+                        ${
+                          isAdded
+                            ? "bg-green-100 text-green-700 border border-green-400"
+                            : "bg-green-600 text-white hover:bg-green-700"
+                        }
+                        disabled:opacity-40`}
+                    >
+                      {isAdded ? (
+                        <>
+                          <Check size={14} />
+                          Added
+                          {qty > 0 && (
+                            <span className="ml-1 bg-green-600 text-white px-2 py-0.5 rounded-full text-xs">
+                              {qty}
+                            </span>
+                          )}
+                        </>
+                      ) : (
+                        <>
+                          <Plus size={14} />
+                          Add
+                        </>
+                      )}
+                    </button>
+                  </td>
+                </motion.tr>
+              );
+            })}
           </tbody>
         </table>
-      </div>
-
-      {/* PAGINATION */}
-      <div className="flex justify-center items-center gap-4 mt-8">
-        <button disabled={page === 1} onClick={() => setPage((p) => p - 1)} className="px-6 py-2 bg-white border border-gray-200 shadow-sm rounded-lg hover:bg-gray-50 disabled:opacity-50 transition-all font-medium">Prev</button>
-        <span className="bg-gray-100 px-4 py-2 rounded-lg font-bold text-gray-700">{page} / {pages}</span>
-        <button disabled={page === pages} onClick={() => setPage((p) => p + 1)} className="px-6 py-2 bg-white border border-gray-200 shadow-sm rounded-lg hover:bg-gray-50 disabled:opacity-50 transition-all font-medium">Next</button>
       </div>
     </div>
   );
