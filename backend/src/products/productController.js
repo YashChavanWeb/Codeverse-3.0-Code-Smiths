@@ -337,6 +337,276 @@ const getProductImageByName = async (req, res) => {
   }
 };
 
+
+// productController.js - Add this new function
+
+// productController.js - Update the getVendorLeaderboard function
+/// Update the getVendorLeaderboard function in productController.js
+/* ---------- VENDOR LEADERBOARD WITH DEMAND ANALYTICS ---------- */
+const getVendorLeaderboard = async (req, res) => {
+  const { city, sortBy = "productCount", page = 1, limit = 10 } = req.query;
+
+  try {
+    // Match products by city if provided
+    let productMatch = {};
+    let vendorIds = [];
+    
+    if (city) {
+      // Extract just the main city name from location (e.g., "Vasai" from "Vasai West, Mumbai")
+      const vendorsInCity = await User.find({
+        $or: [
+          { "location.address": new RegExp(city, "i") },
+          { "location.city": new RegExp(city, "i") },
+          { location: new RegExp(city, "i") }
+        ],
+        role: "vendor",
+      }).select("_id location");
+      
+      vendorIds = vendorsInCity.map((v) => v._id);
+      if (vendorIds.length > 0) {
+        productMatch.vendor = { $in: vendorIds };
+      }
+    }
+
+    // Aggregate vendor statistics with demand data
+    const vendorStats = await Product.aggregate([
+      { $match: productMatch },
+      {
+        $lookup: {
+          from: "users",
+          localField: "vendor",
+          foreignField: "_id",
+          as: "vendorDetails",
+        },
+      },
+      { $unwind: "$vendorDetails" },
+      {
+        $lookup: {
+          from: "baskets",
+          localField: "_id",
+          foreignField: "product",
+          as: "demandData",
+        },
+      },
+      {
+        $group: {
+          _id: "$vendor",
+          storeName: { $first: "$vendorDetails.storeName" },
+          // Extract main location only (first part before comma)
+          location: {
+            $first: {
+              $arrayElemAt: [
+                {
+                  $split: [
+                    { 
+                      $ifNull: [
+                        "$vendorDetails.location.address",
+                        "$vendorDetails.location", 
+                        "Unknown"
+                      ] 
+                    },
+                    ","
+                  ]
+                },
+                0
+              ]
+            }
+          },
+          productCount: { $sum: 1 },
+          totalStock: { $sum: "$stock.current" },
+          outOfStockItems: {
+            $sum: { $cond: [{ $eq: ["$stock.current", 0] }, 1, 0] },
+          },
+          lowStockItems: {
+            $sum: {
+              $cond: [
+                {
+                  $and: [
+                    { $gt: ["$stock.current", 0] },
+                    { $lt: ["$stock.current", 10] },
+                  ],
+                },
+                1,
+                0,
+              ],
+            },
+          },
+          // Demand Analytics
+          totalDemand: {
+            $sum: {
+              $reduce: {
+                input: "$demandData",
+                initialValue: 0,
+                in: { $add: ["$$value", "$$this.demandCount"] }
+              }
+            }
+          },
+          avgDemandIndex: {
+            $avg: {
+              $map: {
+                input: "$demandData",
+                as: "demand",
+                in: "$$demand.demandIndex"
+              }
+            }
+          },
+          highDemandProducts: {
+            $sum: {
+              $cond: [
+                {
+                  $gt: [
+                    {
+                      $ifNull: [
+                        { $arrayElemAt: ["$demandData.demandIndex", 0] },
+                        0
+                      ]
+                    },
+                    50
+                  ]
+                },
+                1,
+                0
+              ]
+            }
+          },
+          avgPrice: { $avg: "$price" },
+          availableProducts: {
+            $sum: { $cond: [{ $eq: ["$available", true] }, 1, 0] },
+          },
+        },
+      },
+      {
+        $project: {
+          _id: 1,
+          storeName: 1,
+          location: { $trim: { input: "$location" } }, // Clean up whitespace
+          productCount: 1,
+          totalStock: 1,
+          outOfStockItems: 1,
+          lowStockItems: 1,
+          // Demand Metrics
+          totalDemand: { $ifNull: ["$totalDemand", 0] },
+          avgDemandIndex: { $round: [{ $ifNull: ["$avgDemandIndex", 0] }, 1] },
+          highDemandProducts: 1,
+          demandPressure: {
+            $cond: [
+              { $eq: ["$totalStock", 0] },
+              0,
+              {
+                $round: [
+                  {
+                    $multiply: [
+                      { $divide: ["$totalDemand", "$totalStock"] },
+                      100
+                    ]
+                  },
+                  1
+                ]
+              }
+            ]
+          },
+          // Stock Health
+          stockHealth: {
+            $cond: [
+              { $eq: ["$productCount", 0] },
+              0,
+              {
+                $round: [
+                  {
+                    $subtract: [
+                      100,
+                      {
+                        $multiply: [
+                          {
+                            $divide: [
+                              { $add: ["$outOfStockItems", "$lowStockItems"] },
+                              "$productCount",
+                            ],
+                          },
+                          100,
+                        ],
+                      },
+                    ],
+                  },
+                  1
+                ]
+              },
+            ],
+          },
+          avgPrice: { $round: ["$avgPrice", 2] },
+          availableProducts: 1,
+          availabilityRate: {
+            $cond: [
+              { $eq: ["$productCount", 0] },
+              0,
+              {
+                $round: [
+                  {
+                    $multiply: [
+                      { $divide: ["$availableProducts", "$productCount"] },
+                      100,
+                    ],
+                  },
+                  1
+                ]
+              },
+            ],
+          },
+        },
+      },
+    ]);
+
+    // Default sorting options
+    let sortField = "productCount";
+    let sortOrder = -1;
+
+    if (sortBy === "stockHealth") sortField = "stockHealth";
+    else if (sortBy === "availabilityRate") sortField = "availabilityRate";
+    else if (sortBy === "totalStock") sortField = "totalStock";
+    else if (sortBy === "avgPrice") {
+      sortField = "avgPrice";
+      sortOrder = 1;
+    } else if (sortBy === "demandPressure") {
+      sortField = "demandPressure";
+      sortOrder = -1;
+    } else if (sortBy === "totalDemand") {
+      sortField = "totalDemand";
+      sortOrder = -1;
+    }
+
+    // Sort the results
+    vendorStats.sort((a, b) => {
+      const aValue = a[sortField] || 0;
+      const bValue = b[sortField] || 0;
+      if (aValue < bValue) return sortOrder;
+      if (aValue > bValue) return -sortOrder;
+      return 0;
+    });
+
+    // Pagination
+    const total = vendorStats.length;
+    const startIndex = (Number(page) - 1) * Number(limit);
+    const endIndex = startIndex + Number(limit);
+    const paginatedData = vendorStats.slice(startIndex, endIndex);
+
+    res.status(200).json({
+      success: true,
+      total,
+      page: Number(page),
+      pages: Math.ceil(total / limit),
+      sortBy,
+      data: paginatedData,
+    });
+  } catch (error) {
+    console.error("Error in getVendorLeaderboard:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching vendor leaderboard",
+      error: error.message,
+    });
+  }
+};
+
 export {
   getProductsByLocation,
   getProductById,
@@ -348,4 +618,5 @@ export {
   deleteProduct,
   getVendorsWithProducts,
   getProductImageByName,
+  getVendorLeaderboard,
 };

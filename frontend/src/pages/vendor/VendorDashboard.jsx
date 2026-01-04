@@ -5,6 +5,7 @@ import axios from "axios";
 // UI Components
 import { Button, CardHeader } from "../../components/ui";
 import Leaderboard from "../../components/Leaderboard";
+import VendorLeaderboard from "../../components/VendorLeaderboard";
 
 // Context
 import { useAuth } from "../../context/AuthContext";
@@ -17,11 +18,13 @@ const VendorDashboard = () => {
   // Local State for User Data
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [leaderboardError, setLeaderboardError] = useState(null);
 
   // Define API Endpoints - Scoped for Vendor
   const PROFILE_URL = `${import.meta.env.VITE_BACKEND_URL}/auth/me`;
   const VENDOR_PRODUCTS_FETCH_URL = `${import.meta.env.VITE_BACKEND_URL}/products/location`;
   const PRODUCTS_STREAM_URL = `${import.meta.env.VITE_BACKEND_URL}/products/stream`;
+  const VENDOR_LEADERBOARD_URL = `${import.meta.env.VITE_BACKEND_URL}/products/vendor-leaderboard`;
 
   /* ---------------- FETCH USER PROFILE ---------------- */
   useEffect(() => {
@@ -37,6 +40,7 @@ const VendorDashboard = () => {
         setUserData(response.data.user);
       } catch (err) {
         console.error("Error fetching profile on VendorDashboard:", err);
+        setLeaderboardError("Failed to load user profile");
       } finally {
         setLoading(false);
       }
@@ -49,6 +53,7 @@ const VendorDashboard = () => {
   const username = userData?.username || "Vendor";
   const userInitial = username.charAt(0).toUpperCase();
   const storeDisplayName = userData?.storeName || "your store";
+  const userCity = userData?.location?.address || userData?.location || "";
 
   if (loading) {
     return (
@@ -71,7 +76,7 @@ const VendorDashboard = () => {
               Welcome back, {username}!
             </h2>
             <p className="text-sm sm:text-md text-gray-500">
-              Managing {storeDisplayName}
+              Managing {storeDisplayName} • {userCity}
             </p>
           </div>
         </div>
@@ -80,23 +85,48 @@ const VendorDashboard = () => {
           <Button onClick={() => navigate("/add-product")} className="bg-green-600 hover:bg-green-700 text-white">
             Add New Product
           </Button>
+          <Button onClick={() => navigate("/my-products")} variant="outline" className="border-green-600 text-green-600 hover:bg-green-50">
+            View All Products
+          </Button>
         </div>
       </section>
 
-      {/* Leaderboard Section */}
-      <Card className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden w-full">
-        <CardHeader className="bg-linear-to-br from-green-50/80 via-green-600/20 to green-50/80 border-2 rounded-t-md">
-          <h3 className="font-semibold text-gray-700">Your Inventory Performance</h3>
-        </CardHeader>
+      {/* Vendor Leaderboard Section */}
+      <section className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden w-full">
+        <div className="p-4 border-b bg-gray-50/50">
+          <h3 className="font-semibold text-gray-700">Vendor Leaderboard</h3>
+          <p className="text-sm text-gray-500">
+            See how you rank against other vendors in your area
+          </p>
+          {leaderboardError && (
+            <p className="text-sm text-red-500 mt-1">{leaderboardError}</p>
+          )}
+        </div>
+        <div className="w-full">
+          <VendorLeaderboard
+            title="Top Vendors"
+            fetchUrl={VENDOR_LEADERBOARD_URL}
+            streamUrl={PRODUCTS_STREAM_URL}
+            pageSize={10}
+            showCityFilter={true}
+          />
+        </div>
+      </section>
+
+      {/* My Products Section
+      <section className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden w-full">
+        <div className="p-4 border-b bg-gray-50/50">
+          <h3 className="font-semibold text-gray-700">My Inventory Performance</h3>
+        </div>
         <div className="w-full">
           <Leaderboard
             title="My Products"
-            fetchUrl={VENDOR_PRODUCTS_FETCH_URL}
+            // fetchUrl={VENDOR_PRODUCTS_FETCH_URL}
             streamUrl={PRODUCTS_STREAM_URL}
             pageSize={5}
           />
         </div>
-      </Card>
+      </section> */}
     </div>
   );
 };
