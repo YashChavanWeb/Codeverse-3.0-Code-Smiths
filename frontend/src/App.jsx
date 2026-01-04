@@ -4,13 +4,9 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-route
 // Context & Routes
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import ProtectedRoute from "./routes/ProtectedRoute";
-import { NotificationProvider } from "./context/NotificationContext";
-import { BasketProvider } from "./context/BasketContext";
 
 // Components
 import Drawer from "./components/ui/Drawer";
-import Navbar from "./components/ui/Navbar";
-import NotificationPanel from "./components/NotificationPanel";
 
 // Auth & Public Pages
 import LandingPage from "./pages/LandingPage";
@@ -18,11 +14,13 @@ import Signup from "./pages/auth/Signup";
 import Signin from "./pages/auth/Signin";
 import RoleSelection from "./pages/auth/RoleSelection";
 
+// General Pages
+import Profile from "./components/Profile";
+
 // User Pages
 import Dashboard from "./pages/user/DashboardPage";
 import BasketEstimator from "./pages/user/BasketEstimator";
-import LiveMap from "./components/LiveMap";
-import Profile from "./components/Profile";
+import LocationLiveMap from "./pages/user/LocationLiveMap";
 
 // Vendor Pages
 import VendorDashboard from "./pages/vendor/VendorDashboard";
@@ -31,31 +29,38 @@ import VendorManualAdd from "./pages/vendor/VendorManualAdd";
 import VendorCsvUpload from "./pages/vendor/VendorCsvUpload";
 import VendorVoiceAdd from "./pages/vendor/VendorVoiceAdd";
 import VendorProducts from "./pages/vendor/VendorProducts";
+import logo from './assets/Images/logo.png'
 
-// Simple Navbar
-const AppNavbar = ({ drawerOpen }) => {
+// Simple Navbar Component
+const Navbar = ({ drawerOpen }) => {
   const { user } = useAuth();
+
   return (
     <header
-      className={`fixed top-0 left-0 right-0 h-18 bg-green-900 text-white flex items-center px-4 transition-all duration-300 z-20 ${
-        drawerOpen ? "md:ml-64" : "md:ml-20"
-      }`}
+      className={`fixed top-0 left-0 right-0 h-18 bg-green-900 text-white flex items-center px-4 transition-all duration-300 z-20 ${drawerOpen ? "md:ml-64" : "md:ml-20"
+        }`}
     >
-      <h1 className="flex-1 text-xl font-semibold truncate">SmartVegie</h1>
-      {user?.name && <span className="text-sm ml-4">{user.name}</span>}
+      <img src={logo} className="w-15 h-15"></img>
+      <h1 className="flex-1 text-xl font-semibold truncate text-white">SmartVegie</h1>
+      <div className="ml-4">
+        {user?.name && <span className="text-sm">{user.name}</span>}
+      </div>
     </header>
+
   );
 };
 
 const AppContent = () => {
   const [drawerOpen, setDrawerOpen] = useState(true);
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user } = useAuth(); // Assuming 'user' contains role info
   const location = useLocation();
 
+  // Public routes: No drawer or navbar margin
   const publicRoutes = ["/", "/signin", "/signup", "/select-role"];
   const isPublicRoute = publicRoutes.includes(location.pathname);
   const showDrawer = isAuthenticated && !isPublicRoute;
 
+  // Determine where to redirect after login
   const getRedirectPath = () => {
     const role = user?.role || localStorage.getItem("role");
     return role === "vendor" ? "/vendor" : "/dashboard";
@@ -63,18 +68,23 @@ const AppContent = () => {
 
   return (
     <div className="flex min-h-screen bg-gray-50">
+      {/* Drawer */}
       {showDrawer && <Drawer open={drawerOpen} onToggle={setDrawerOpen} />}
 
       <div className="flex-1 flex flex-col">
-        {isAuthenticated && !isPublicRoute && <AppNavbar drawerOpen={drawerOpen} />}
+        {/* Navbar */}
+        {isAuthenticated && !isPublicRoute && <Navbar drawerOpen={drawerOpen} />}
 
         <main
-          className={`flex-1 flex flex-col transition-all duration-300 ${
-            showDrawer ? (drawerOpen ? "md:ml-64 pt-14" : "md:ml-20 pt-14") : "pt-14"
-          }`}
+          className={`flex-1 flex flex-col transition-all duration-300 ${showDrawer
+              ? drawerOpen
+                ? "md:ml-64 pt-14"
+                : "md:ml-20 pt-14"
+              : "pt-14"
+            }`}
         >
           <Routes>
-            {/* Public Routes */}
+            {/* ROOT ROUTE */}
             <Route
               path="/"
               element={
@@ -85,10 +95,16 @@ const AppContent = () => {
                 )
               }
             />
+
+            {/* Auth Routes */}
             <Route
               path="/signin"
               element={
-                isAuthenticated ? <Navigate to={getRedirectPath()} replace /> : <Signin />
+                isAuthenticated ? (
+                  <Navigate to={getRedirectPath()} replace />
+                ) : (
+                  <Signin />
+                )
               }
             />
             <Route path="/signup" element={<Signup />} />
@@ -115,22 +131,12 @@ const AppContent = () => {
               path="/location-vendors"
               element={
                 <ProtectedRoute roles={["user"]}>
-                  <LiveMap />
+                  <LocationLiveMap />
                 </ProtectedRoute>
               }
             />
 
-            {/* Notifications */}
-            <Route
-              path="/notifications"
-              element={
-                <ProtectedRoute roles={["user", "vendor"]}>
-                  <NotificationPanel />
-                </ProtectedRoute>
-              }
-            />
-
-            {/* Profile */}
+            {/* Common Protected Routes */}
             <Route
               path="/profile"
               element={
@@ -199,16 +205,18 @@ const AppContent = () => {
   );
 };
 
-const App = () => (
-  <AuthProvider>
-    <NotificationProvider>
+import { BasketProvider } from "./context/BasketContext";
+
+const App = () => {
+  return (
+    <AuthProvider>
       <BasketProvider>
         <BrowserRouter>
           <AppContent />
         </BrowserRouter>
       </BasketProvider>
-    </NotificationProvider>
-  </AuthProvider>
-);
+    </AuthProvider>
+  );
+};
 
 export default App;
