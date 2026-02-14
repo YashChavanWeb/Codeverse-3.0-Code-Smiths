@@ -94,7 +94,7 @@ const VendorAddOptions = () => {
 
   return (
     <div className="min-h-screen px-4 sm:px-6 lg:px-8 py-6">
-      <div className="max-w-7xl mx-auto space-y-8">
+      <div className="max-w-7xl mx-auto space-y-8 mt-5 md:mt-18">
 
         {/* TOP SECTION */}
         <Card>

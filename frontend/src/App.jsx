@@ -34,10 +34,43 @@ import VendorProducts from "./pages/vendor/VendorProducts";
 
 import { BasketProvider } from "./context/BasketContext";
 
+import logo from './assets/Images/logo.png';
+
+const Navbar = ({ drawerOpen }) => {
+  const { user } = useAuth();
+
+  return (
+    <header
+      className={`fixed top-0 left-0 right-0 h-18 bg-green-900 text-white flex items-center px-4 transition-all duration-300 z-20 ${
+        drawerOpen ? "md:ml-64" : "md:ml-20"
+      }`}
+    >
+      <img src={logo} className="w-15 h-15" alt="logo" />
+      <h1 className="flex-1 text-xl font-semibold truncate text-white">SmartVegis</h1>
+      <div className="ml-4">
+        {user?.name && <span className="text-sm">{user.name}</span>}
+      </div>
+    </header>
+  );
+};
+
 const AppContent = () => {
-  const [drawerOpen, setDrawerOpen] = useState(true);
-  const { isAuthenticated, user } = useAuth();
   const location = useLocation();
+  const { isAuthenticated, user } = useAuth();
+
+  // Drawer state with localStorage persistence
+  const [drawerOpen, setDrawerOpen] = useState(() => {
+    const saved = localStorage.getItem("drawerOpen");
+    return saved ? JSON.parse(saved) : false;
+  });
+
+  const toggleDrawer = () => {
+    setDrawerOpen((prev) => {
+      const next = !prev;
+      localStorage.setItem("drawerOpen", JSON.stringify(next));
+      return next;
+    });
+  };
 
   const publicRoutes = ["/", "/signin", "/signup", "/select-role"];
   const isPublicRoute = publicRoutes.includes(location.pathname);
@@ -50,7 +83,12 @@ const AppContent = () => {
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      {showDrawer && <Drawer open={drawerOpen} onToggle={setDrawerOpen} />}
+      {/* Drawer */}
+      {showDrawer && <Drawer open={drawerOpen} onToggle={toggleDrawer} />}
+
+      <div className="flex-1 flex flex-col">
+        {/* Navbar */}
+        {isAuthenticated && !isPublicRoute && <Navbar drawerOpen={drawerOpen} />}
 
       <main
         className={`flex-1 flex flex-col transition-all duration-300 ${showDrawer ? (drawerOpen ? "md:ml-64" : "md:ml-20") : ""
@@ -183,6 +221,7 @@ const AppContent = () => {
           </Routes>
         </div>
       </main>
+    </div>
     </div>
   );
 };

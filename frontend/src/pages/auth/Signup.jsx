@@ -114,7 +114,7 @@ function Signup() {
 
     setIsLoading(true);
     try {
-      const response = await axios.post("http://localhost:3000/api/v1/auth/signup", formData);
+      const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/auth/signup`, formData);
 
       if (response.status === 201) {
         const { token, role, username } = response.data;

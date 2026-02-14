@@ -266,7 +266,7 @@ const VendorProducts = () => {
 
   return (
     <div className="min-h-screen bg-slate-50/50 px-4 py-10  text-slate-900">
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-6xl mx-auto mt-5 md:mt-18">
         <Card className="border-none shadow-xl shadow-slate-200/50 overflow-hidden">
           <CardHeader className="border-b border-2 border-slate-300 p-6 bg-linear-to-br from-green-50/80 via-green-600/20 to green-50/80 rounded-t-md">
             <div className="flex justify-between items-center">

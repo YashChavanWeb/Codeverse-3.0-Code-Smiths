@@ -5,23 +5,25 @@ import {
   Home as HomeIcon,
   User,
   LogOut,
+  Trophy,
   MapPin,
+  ShoppingCart,
   DollarSign,
   PlusSquare,
-  Tag,
+  Tag,  
   BarChart2,
   Mic,
   X,
   Bell,
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
-import { useNotifications } from "../../context/NotificationContext";
+import { useNotifications } from "../../context/NotificationContext"; // logic added
 
 const Drawer = ({ open, onToggle, role: propRole }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { logout, role: authRole, isAuthenticated } = useAuth();
-  const { unreadCount } = useNotifications();
+  const { unreadCount } = useNotifications(); // notification logic
   const [isMobile, setIsMobile] = useState(false);
 
   // Handle screen resize
@@ -33,7 +35,7 @@ const Drawer = ({ open, onToggle, role: propRole }) => {
   }, []);
 
   // Hide Drawer on public routes
-  const publicRoutes = ["/", "/signin", "/signup", "/select-role"];
+  const publicRoutes = ["/signin", "/signup", "/select-role"];
   const isPublicRoute = publicRoutes.includes(location.pathname);
 
   // Prevent scroll when drawer open (desktop only)
@@ -56,11 +58,11 @@ const Drawer = ({ open, onToggle, role: propRole }) => {
       { label: "Dashboard", icon: <HomeIcon size={20} />, path: "/dashboard" },
       { label: "Location Vendors", icon: <MapPin size={20} />, path: "/location-vendors" },
       { label: "Basket Estimator", icon: <DollarSign size={20} />, path: "/basket-estimator" },
-      { 
-        label: "Notifications", 
-        icon: <Bell size={20} />, 
+      {
+        label: "Notifications",
+        icon: <Bell size={20} />,
         path: "/notifications",
-        badge: unreadCount > 0 ? unreadCount : null
+        badge: unreadCount > 0 ? unreadCount : null, // logic preserved
       },
     ],
     vendor: [
@@ -68,12 +70,12 @@ const Drawer = ({ open, onToggle, role: propRole }) => {
       { label: "Add Products", icon: <PlusSquare size={20} />, path: "/vendor/add" },
       { label: "Manage Products", icon: <Tag size={20} />, path: "/vendor/products" },
       // { label: "Market Insights", icon: <BarChart2 size={20} />, path: "/vendor/compare" },
-      // { label: "Voice Updates", icon: <Mic size={20} />, path: "/vendor/add/voice" },
-      { 
-        label: "Notifications", 
-        icon: <Bell size={20} />, 
+      { label: "Voice Updates", icon: <Mic size={20} />, path: "/vendor/add/voice" },
+      {
+        label: "Notifications",
+        icon: <Bell size={20} />,
         path: "/notifications",
-        badge: unreadCount > 0 ? unreadCount : null
+        badge: unreadCount > 0 ? unreadCount : null, // logic preserved
       },
     ],
   };
@@ -107,37 +109,28 @@ const Drawer = ({ open, onToggle, role: propRole }) => {
               <button
                 key={item.label}
                 onClick={() => navigate(item.path)}
-                className={`flex items-center gap-3 w-full p-3 rounded-xl transition-all ease-in-out group relative
+                className={`flex items-center gap-3 w-full p-3 rounded-xl transition-all ease-in-out group
                   ${isActive
                     ? "bg-green-500/30 text-green-800 px-3"
                     : "text-gray-500 hover:bg-green-50 hover:text-gray-900"
                   }
                 `}
               >
-                <div className="relative">
-                  <span className={`${isActive ? "text-green-800" : "text-gray-500 group-hover:text-gray-600"}`}>
-                    {item.icon}
+                <span className={`${isActive ? "text-green-800" : "text-gray-500 group-hover:text-gray-600"}`}>
+                  {item.icon}
+                </span>
+                {open && <span className="font-medium whitespace-nowrap text-sm">{item.label}</span>}
+
+                {/* Badge for Notifications */}
+                {open && item.badge && item.path === "/notifications" && (
+                  <span className="flex items-center justify-center min-w-5 h-5 px-1 text-xs font-bold text-white bg-red-500 rounded-full">
+                    {item.badge > 9 ? "9+" : item.badge}
                   </span>
-                  
-                  {/* Badge for collapsed sidebar (on icon) */}
-                  {!open && item.badge && item.path === "/notifications" && (
-                    <span className="absolute -top-2 -right-2 flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-500 rounded-full">
-                      {item.badge > 9 ? "9+" : item.badge}
-                    </span>
-                  )}
-                </div>
-                
-                {open && (
-                  <div className="flex items-center justify-between flex-1">
-                    <span className="font-medium whitespace-nowrap text-sm">{item.label}</span>
-                    
-                    {/* Badge for expanded sidebar (next to label) */}
-                    {item.badge && item.path === "/notifications" && (
-                      <span className="flex items-center justify-center min-w-5 h-5 px-1 text-xs font-bold text-white bg-red-500 rounded-full">
-                        {item.badge > 9 ? "9+" : item.badge}
-                      </span>
-                    )}
-                  </div>
+                )}
+                {!open && item.badge && item.path === "/notifications" && (
+                  <span className="absolute -top-2 -right-2 flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-500 rounded-full">
+                    {item.badge > 9 ? "9+" : item.badge}
+                  </span>
                 )}
               </button>
             );
@@ -166,56 +159,27 @@ const Drawer = ({ open, onToggle, role: propRole }) => {
         </div>
       </aside>
 
-      {/* Mobile Top Bar */}
-      <div className="md:hidden fixed top-0 left-0 w-full bg-white shadow-b border-b z-50">
-        <div className="flex items-center justify-between p-4">
-          <h1 className="font-bold text-lg text-green-600">SmartVegis</h1>
-          <div className="flex items-center gap-3">
-            {/* Mobile Notification Bell with Badge */}
-            <button
-              onClick={() => navigate("/notifications")}
-              className="relative p-2 rounded-lg hover:bg-gray-100"
-            >
-              <Bell size={22} className="text-gray-600" />
-              {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-500 rounded-full">
-                  {unreadCount > 9 ? "9+" : unreadCount}
+      {/* Mobile Bottom Navigation */}
+      <div className="md:hidden fixed bottom-0 left-0 w-full bg-white shadow-t border-t z-50 flex">
+        {navItems.map((item) => (
+          <button
+            key={item.label}
+            onClick={() => navigate(item.path)}
+            className={`flex-1 py-5 flex flex-col items-center justify-center text-gray-600 hover:text-green-600 transition-colors
+        ${location.pathname === item.path ? "text-green-600" : ""}
+      `}
+          >
+            <div className="relative ">
+              {item.icon}
+              {/* Mobile badge */}
+              {item.badge && item.path === "/notifications" && (
+                <span className="absolute -top-1/2 -right-2 flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-500 rounded-full">
+                  {item.badge > 9 ? "9+" : item.badge}
                 </span>
               )}
-            </button>
-            
-            <button
-              onClick={() => navigate("/profile")}
-              className="p-2 rounded-lg hover:bg-gray-100"
-            >
-              <User size={22} className="text-gray-600" />
-            </button>
-          </div>
-        </div>
-
-        {/* Mobile Bottom Navigation */}
-        <div className="flex border-t">
-          {navItems.slice(0, 4).map((item) => ( // Show only first 4 items on mobile
-            <button
-              key={item.label}
-              onClick={() => navigate(item.path)}
-              className={`flex-1 py-3 flex flex-col items-center justify-center text-gray-600 hover:text-green-600 transition-colors relative
-                ${location.pathname === item.path ? "text-green-600" : ""}
-              `}
-            >
-              <div className="relative">
-                {item.icon}
-                
-                {/* Badge for mobile notifications */}
-                {item.badge && item.path === "/notifications" && (
-                  <span className="absolute -top-2 -right-2 flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-500 rounded-full">
-                    {item.badge > 9 ? "9+" : item.badge}
-                  </span>
-                )}
-              </div>
-            </button>
-          ))}
-        </div>
+            </div>
+          </button>
+        ))}
       </div>
     </>
   );

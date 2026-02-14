@@ -30,18 +30,23 @@ export const createPriceChangeNotification = async (productId, oldPrice, newPric
     const product = await Product.findById(productId)
       .populate("vendor", "storeName")
       .populate("name");
-    
+
     if (!product) return;
 
     // Find users who might be interested in this product
     // For now, create notifications for all users (you can refine this logic later)
-    const users = await User.find({ role: "user" }).select("_id");
-    
+    // Find users and other vendors who might be interested in this product
+    // Exclude the vendor who owns the product
+    const users = await User.find({
+      role: { $in: ["user", "vendor"] },
+      _id: { $ne: product.vendor._id }
+    }).select("_id");
+
     const notifications = [];
-    
+
     for (const user of users) {
       const priceChangePercentage = Math.abs(((newPrice - oldPrice) / oldPrice) * 100);
-      
+
       // Only notify for significant price changes (e.g., > 5%)
       if (priceChangePercentage >= 5) {
         const notification = await createNotification(user._id, {
@@ -60,11 +65,11 @@ export const createPriceChangeNotification = async (productId, oldPrice, newPric
           },
           important: priceChangePercentage > 20, // Mark as important if > 20% change
         });
-        
+
         if (notification) notifications.push(notification);
       }
     }
-    
+
     return notifications;
   } catch (error) {
     console.error("Error creating price change notification:", error);
@@ -77,18 +82,21 @@ export const createStockChangeNotification = async (productId, oldStock, newStoc
     const product = await Product.findById(productId)
       .populate("vendor", "storeName")
       .populate("name");
-    
+
     if (!product) return;
 
-    const users = await User.find({ role: "user" }).select("_id");
-    
+    const users = await User.find({
+      role: { $in: ["user", "vendor"] },
+      _id: { $ne: product.vendor._id }
+    }).select("_id");
+
     const notifications = [];
-    
+
     for (const user of users) {
       let title = "";
       let message = "";
       let important = false;
-      
+
       // Stock went from 0 to available (back in stock)
       if (oldStock === 0 && newStock > 0) {
         title = "Back in Stock!";
@@ -112,7 +120,7 @@ export const createStockChangeNotification = async (productId, oldStock, newStoc
         title = "Stock Updated";
         message = `${product.name} stock increased to ${newStock} at ${product.vendor.storeName}`;
       }
-      
+
       if (title && message) {
         const notification = await createNotification(user._id, {
           type: "STOCK_CHANGE",
@@ -129,11 +137,11 @@ export const createStockChangeNotification = async (productId, oldStock, newStoc
           },
           important,
         });
-        
+
         if (notification) notifications.push(notification);
       }
     }
-    
+
     return notifications;
   } catch (error) {
     console.error("Error creating stock change notification:", error);
@@ -146,15 +154,18 @@ export const createAvailabilityChangeNotification = async (productId, wasAvailab
     const product = await Product.findById(productId)
       .populate("vendor", "storeName")
       .populate("name");
-    
+
     if (!product) return;
 
     // Only notify if status changed
     if (wasAvailable !== isNowAvailable) {
-      const users = await User.find({ role: "user" }).select("_id");
-      
+      const users = await User.find({
+        role: { $in: ["user", "vendor"] },
+        _id: { $ne: product.vendor._id }
+      }).select("_id");
+
       const notifications = [];
-      
+
       for (const user of users) {
         const notification = await createNotification(user._id, {
           type: "AVAILABILITY_CHANGE",
@@ -170,10 +181,10 @@ export const createAvailabilityChangeNotification = async (productId, wasAvailab
           },
           important: true,
         });
-        
+
         if (notification) notifications.push(notification);
       }
-      
+
       return notifications;
     }
   } catch (error) {
@@ -187,20 +198,21 @@ export const createNewProductNotification = async (productId) => {
     const product = await Product.findById(productId)
       .populate("vendor", "storeName location")
       .populate("name category price");
-    
+
     if (!product) return;
 
-    // Find users in the same location
+    // Find users and vendors in the same location
     const users = await User.find({
-      role: "user",
+      role: { $in: ["user", "vendor"] },
+      _id: { $ne: product.vendor._id },
       $or: [
         { "location.address": new RegExp(product.vendor.location.address, "i") },
         { "location.city": new RegExp(product.vendor.location.address, "i") },
       ]
     }).select("_id");
-    
+
     const notifications = [];
-    
+
     for (const user of users) {
       const notification = await createNotification(user._id, {
         type: "NEW_PRODUCT",
@@ -217,10 +229,10 @@ export const createNewProductNotification = async (productId) => {
         },
         important: false,
       });
-      
+
       if (notification) notifications.push(notification);
     }
-    
+
     return notifications;
   } catch (error) {
     console.error("Error creating new product notification:", error);
@@ -232,24 +244,24 @@ export const getUserNotifications = async (req, res) => {
   try {
     const { page = 1, limit = 20, unreadOnly = false } = req.query;
     const userId = req.user._id;
-    
+
     const filter = { userId };
     if (unreadOnly === "true") {
       filter.read = false;
     }
-    
+
     const skip = (Number(page) - 1) * Number(limit);
-    
+
     const notifications = await Notification.find(filter)
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(Number(limit))
       .populate("productId", "name imageUrl")
       .populate("vendorId", "storeName");
-    
+
     const total = await Notification.countDocuments(filter);
     const unreadCount = await Notification.countDocuments({ userId, read: false });
-    
+
     res.status(200).json({
       success: true,
       total,
@@ -273,20 +285,20 @@ export const markAsRead = async (req, res) => {
   try {
     const { notificationId } = req.params;
     const userId = req.user._id;
-    
+
     const notification = await Notification.findOneAndUpdate(
       { _id: notificationId, userId },
       { read: true },
       { new: true }
     );
-    
+
     if (!notification) {
       return res.status(404).json({
         success: false,
         message: "Notification not found",
       });
     }
-    
+
     res.status(200).json({
       success: true,
       data: notification,
@@ -305,12 +317,12 @@ export const markAsRead = async (req, res) => {
 export const markAllAsRead = async (req, res) => {
   try {
     const userId = req.user._id;
-    
+
     const result = await Notification.updateMany(
       { userId, read: false },
       { read: true }
     );
-    
+
     res.status(200).json({
       success: true,
       message: `${result.modifiedCount} notifications marked as read`,
@@ -331,19 +343,19 @@ export const deleteNotification = async (req, res) => {
   try {
     const { notificationId } = req.params;
     const userId = req.user._id;
-    
+
     const notification = await Notification.findOneAndDelete({
       _id: notificationId,
       userId,
     });
-    
+
     if (!notification) {
       return res.status(404).json({
         success: false,
         message: "Notification not found",
       });
     }
-    
+
     res.status(200).json({
       success: true,
       message: "Notification deleted successfully",
@@ -362,9 +374,9 @@ export const deleteNotification = async (req, res) => {
 export const clearAllNotifications = async (req, res) => {
   try {
     const userId = req.user._id;
-    
+
     const result = await Notification.deleteMany({ userId });
-    
+
     res.status(200).json({
       success: true,
       message: `${result.deletedCount} notifications cleared`,
